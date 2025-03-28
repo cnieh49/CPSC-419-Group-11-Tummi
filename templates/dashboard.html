@@ -1,45 +1,64 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
 </head>
+
 <body>
 
-  <h2>Loading your dashboard...</h2>
-  <p id="user-email"></p>
-  <button onclick="logout()">Logout</button>
+    <h2>Loading your dashboard...</h2>
+    <p id="user-email"></p>
+    <button onclick="logout()">Logout</button>
 
-  <script>
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login-page';
-    }
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login-page';
+        }
 
-    // Fetch protected data from /dashboard API
-    fetch('/dashboard', {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Unauthorized");
-      return res.json();
-    })
-    .then(data => {
-      document.querySelector('h2').textContent = data.message;
-      document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
-    })
-    .catch(() => {
-      localStorage.removeItem('token');
-      window.location.href = '/login-page';
-    });
+        // Fetch protected data from /dashboard API
+        fetch('/dashboard', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Unauthorized");
+                return res.json();
+            })
+            .then(data => {
+                document.querySelector('h2').textContent = data.message;
+                document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
+            })
+            .catch(() => {
+                localStorage.removeItem('token');
+                window.location.href = '/login-page';
+            });
 
-    function logout() {
-      localStorage.removeItem('token');
-      window.location.href = '/login-page';
-    }
-  </script>
+        fetch('/user-reviews', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        })
+            .then(res => res.json())
+            .then(reviews => {
+                const container = document.getElementById('review-list');
+                reviews.forEach(r => {
+                    const p = document.createElement('p');
+                    p.textContent = `${r.title} — ${r.rating}/5: ${r.comment}`;
+                    container.appendChild(p);
+                });
+            });
 
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login-page';
+        }
+    </script>
+    <div id="review-list"></div>
 </body>
+
 </html>

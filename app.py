@@ -43,18 +43,30 @@ def register_page():
 @jwt_required()
 def dashboard():
     user_id = get_jwt_identity()
-    #user = User.query.get(user_id)
+    user = User.query.get(user_id)
     return jsonify({
         "email": user.email,
         "message": f"Welcome to your dashboard, {user.email}!"
     })
 
+@app.route('/user-reviews')
+@jwt_required()
+def user_reviews():
+    user_id = get_jwt_identity()
+    reviews = Review.query.filter_by(user_id=user_id).all()
+    return jsonify([{
+        'title': r.title,
+        'rating': r.rating,
+        'comment': r.comment
+    } for r in reviews])
+
+
 @app.route('/dashboard-page')
 def dashboard_page():
-    #return render_template('dashboard.html')
+    return render_template('dashboard.html')
 
-    reviews = Review.query.filter_by(user_id=user_id).all()
-    return render_template('dashboard.html', reviews=reviews)
+    # reviews = Review.query.filter_by(user_id=user_id).all()
+    # return render_template('dashboard.html', reviews=reviews)
 
 @app.route('/login', methods=['POST'])
 def login():
