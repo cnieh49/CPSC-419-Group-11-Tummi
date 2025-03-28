@@ -110,36 +110,36 @@
     <p id="review-msg"></p>
 
     <script>
-            document.getElementById('review-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
+        document.getElementById('review-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-                const form = e.target;
-                const formData = new FormData(form);
+            const form = e.target;
+            const formData = new FormData(form);
 
-                const token = localStorage.getItem('token');
+            const token = localStorage.getItem('token');
 
-                const res = await fetch('/add-review', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    },
-                    body: formData
-                });
-
-                const data = await res.json();
-                const msgEl = document.getElementById('review-msg');
-                if (res.ok) {
-                    msgEl.textContent = 'Review submitted!';
-                    msgEl.style.color = 'green';
-                    form.reset();
-
-                    // Reload reviews dynamically
-                    loadReviews();
-                } else {
-                    msgEl.textContent = data.message || 'Something went wrong.';
-                    msgEl.style.color = 'red';
-                }
+            const res = await fetch('/add-review', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                body: formData
             });
+
+            const data = await res.json();
+            const msgEl = document.getElementById('review-msg');
+            if (res.ok) {
+                msgEl.textContent = 'Review submitted!';
+                msgEl.style.color = 'green';
+                form.reset();
+
+                // Reload reviews dynamically
+                loadReviews();
+            } else {
+                msgEl.textContent = data.message || 'Something went wrong.';
+                msgEl.style.color = 'red';
+            }
+        });
     </script>
 
     <script>
@@ -184,12 +184,13 @@
                         reviews.forEach(r => {
                             const div = document.createElement('div');
                             div.innerHTML = `
-          <h3>${r.restaurant_name}</h3>
-          <p>Location: ${r.location}</p>
-          <p>Notes: ${r.notes || 'None'}</p>
-          ${r.photo_url ? `<img src="${r.photo_url}" width="400"/>` : ''}
-          <hr/>
-        `;
+                                <h3>${r.restaurant_name}</h3>
+                                <p>Location: ${r.location}</p>
+                                <p>Notes: ${r.notes || 'None'}</p>
+                                <p><small>Posted on: ${r.timestamp}</small></p>
+                                ${r.photo_url ? `<img src="${r.photo_url}" width="400"/>` : ''}
+                                <hr/>
+                            `;
                             container.appendChild(div);
                         });
                     }

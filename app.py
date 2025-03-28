@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from models import db, User
 from werkzeug.utils import secure_filename
+from datetime import datetime
 import os
 import requests
 
@@ -24,6 +25,7 @@ class Review(db.Model):
     notes = db.Column(db.Text, nullable=True)
     photo_url = db.Column(db.String(255), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 with app.app_context():
     db.create_all()
@@ -54,12 +56,13 @@ def dashboard():
 @jwt_required()
 def user_reviews():
     user_id = get_jwt_identity()
-    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.id.desc()).all()
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
     return jsonify([{
         'restaurant_name': r.restaurant_name,
         'location': r.location,
         'notes': r.notes,
-        'photo_url': r.photo_url
+        'photo_url': r.photo_url,
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     } for r in reviews])
 
 @app.route('/uploads/<filename>')
