@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login Demo</title>
+</head>
+<body>
+  <h2>Register</h2>
+  <input type="email" id="reg_email" placeholder="Email">
+  <input type="password" id="reg_password" placeholder="Password">
+  <button onclick="register()">Register</button>
+
+  <h2>Login</h2>
+  <input type="email" id="login_email" placeholder="Email">
+  <input type="password" id="login_password" placeholder="Password">
+  <button onclick="login()">Login</button>
+
+  <h2>Access Protected</h2>
+  <button onclick="getProtected()">Get Protected Message</button>
+
+  <p id="result"></p>
+
+  <script>
+    let token = ''
+
+    async function register() {
+      const res = await fetch('/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email: document.getElementById('reg_email').value,
+          password: document.getElementById('reg_password').value
+        })
+      });
+      document.getElementById('result').innerText = await res.text()
+    }
+
+    async function login() {
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email: document.getElementById('login_email').value,
+          password: document.getElementById('login_password').value
+        })
+      });
+      const data = await res.json()
+      token = data.access_token
+      document.getElementById('result').innerText = 'Logged in with token: ' + token
+    }
+
+    async function getProtected() {
+      const res = await fetch('/protected', {
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      });
+      const data = await res.json()
+      document.getElementById('result').innerText = data.message
+    }
+  </script>
+</body>
+</html>

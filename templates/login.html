@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Password" required><br>
+      <button type="submit">Log In</button>
+    </form>
+    <p id="message"></p>
+    <p>No account? <a href="/register-page">Register here</a></p>    
+
+  <script>
+    const form = document.getElementById('login-form');
+    const messageEl = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      // Client-side form validation
+      if (!email || !password) {
+        showMessage('Please fill in both fields.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showMessage('Login successful! Redirecting...', 'success');
+          setTimeout(() => window.location.href = '/dashboard', 1000);
+        } else {
+          showMessage(data.message || 'Login failed.', 'error');
+        }
+      } catch (err) {
+        showMessage('Server error. Try again later.', 'error');
+      }
+    });
+
+    function showMessage(text, type) {
+      messageEl.textContent = text;
+      messageEl.className = type;
+    }
+  </script>
+</body>
+</html>
