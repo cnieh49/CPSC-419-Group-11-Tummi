@@ -47,14 +47,14 @@ def dashboard():
     user = User.query.get(user_id)
     return jsonify({
         "email": user.email,
-        "message": f"Welcome to your dashboard, {user.email}!"
+        "message": f"Welcome to Tummi, {user.email}!"
     })
 
 @app.route('/user-reviews')
 @jwt_required()
 def user_reviews():
     user_id = get_jwt_identity()
-    reviews = Review.query.filter_by(user_id=user_id).all()
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.id.desc()).all()
     return jsonify([{
         'restaurant_name': r.restaurant_name,
         'location': r.location,
