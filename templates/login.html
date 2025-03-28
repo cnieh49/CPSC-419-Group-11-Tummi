@@ -9,7 +9,7 @@
     .success { color: green; }
   </style>
 </head>
-<body>
+<body>    
     <h2>Login</h2>
     <form id="login-form">
       <input type="email" id="email" placeholder="Email" required><br>
@@ -45,13 +45,14 @@
         const data = await res.json();
 
         if (res.ok) {
-          showMessage('Login successful! Redirecting...', 'success');
-          setTimeout(() => window.location.href = '/dashboard', 1000);
+            localStorage.setItem('token', data.access_token);
+            showMessage('Login successful! Redirecting...', 'success');
+            setTimeout(() => window.location.href = '/dashboard', 1000);
         } else {
-          showMessage(data.message || 'Login failed.', 'error');
+            showMessage(data.message || 'Login failed.', 'error');
         }
       } catch (err) {
-        showMessage('Server error. Try again later.', 'error');
+        owMessage('Server error. Try again later.', 'error');
       }
     });
 

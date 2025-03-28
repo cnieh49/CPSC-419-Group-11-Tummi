@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+</head>
+<body>
+
+  <h2>Loading your dashboard...</h2>
+  <p id="user-email"></p>
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login-page';
+    }
+
+    // 👇 Fetch user info from protected API route
+    fetch('/me', {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Token invalid");
+      return res.json();
+    })
+    .then(data => {
+      document.querySelector('h2').textContent = 'Welcome to your dashboard!';
+      document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
+    })
+    .catch(() => {
+      // If the token is invalid/expired
+      localStorage.removeItem('token');
+      window.location.href = '/login-page';
+    });
+
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/login-page';
+    }
+  </script>
+
+</body>
+</html>
