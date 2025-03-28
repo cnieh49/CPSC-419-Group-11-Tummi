@@ -6,60 +6,141 @@
     <title>Dashboard</title>
 </head>
 
+<style>
+    #search-results {
+        border: 1px solid #ccc;
+        max-height: 200px;
+        overflow-y: auto;
+        width: 300px;
+        position: absolute;
+        background: white;
+        z-index: 10;
+    }
+
+    #search-results div {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+    }
+
+    #search-results div:hover {
+        background-color: #f0f0f0;
+        cursor: pointer;
+    }
+
+    #review-section {
+        display: none;
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ccc;
+    }
+</style>
+
 <body>
 
     <h2>Loading your dashboard...</h2>
     <p id="user-email"></p>
     <button onclick="logout()">Logout</button>
 
+    <h3>Find a Restaurant</h3>
+    <input type="text" id="search-box" placeholder="Search restaurants..." autocomplete="off">
+    <div id="search-results"></div>
+
+    <div id="review-section">
+        <h3>Write Your Review</h3>
+        <form id="review-form" enctype="multipart/form-data">
+            <input type="text" name="restaurant_name" placeholder="Restaurant name" required readonly><br><br>
+            <input type="text" name="location" placeholder="Location" required readonly><br><br>
+            <textarea name="notes" placeholder="Your notes..."></textarea><br><br>
+            <input type="file" name="photo"><br><br>
+            <button type="submit">Submit Review</button>
+        </form>
+        <p id="review-msg"></p>
+    </div>
+
     <div id="review-list"></div>
 
-    <h3>Add a New Review</h3>
-    <form id="review-form" enctype="multipart/form-data">
-        <input type="text" name="restaurant_name" placeholder="Restaurant name" required><br><br>
-        <input type="text" name="location" placeholder="Location" required><br><br>
-        <textarea name="notes" placeholder="Notes (optional)"></textarea><br><br>
-        <input type="file" name="photo"><br><br>
-        <button type="submit">Submit Review</button>
-    </form>
+    <script>
+        const searchBox = document.getElementById('search-box');
+        const resultsContainer = document.getElementById('search-results');
+
+        searchBox.addEventListener('input', async (e) => {
+            const query = e.target.value;
+            if (query.length < 3) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            const res = await fetch(`/yelp-search?query=${encodeURIComponent(query)}`);
+            const data = await res.json();
+
+            resultsContainer.innerHTML = '';
+
+            data.forEach(place => {
+                const div = document.createElement('div');
+                div.textContent = `${place.name} — ${place.location.address1}, ${place.location.city}`;
+                div.onclick = () => {
+                    const nameInput = document.querySelector('[name="restaurant_name"]');
+                    const locationInput = document.querySelector('[name="location"]');
+
+                    const form = document.getElementById('review-form');
+                    form.reset(); // clear form when new restaurant is selected
+
+                    nameInput.value = place.name;
+                    locationInput.value = `${place.location.address1}, ${place.location.city}`;
+
+                    resultsContainer.innerHTML = '';
+
+                    // Show and scroll to the review form
+                    document.getElementById('review-section').style.display = 'block';
+                    document.getElementById('review-section').scrollIntoView({ behavior: 'smooth' });
+                };
+
+                resultsContainer.appendChild(div);
+            });
+        });
+
+        // Optional: Close dropdown if user clicks outside
+        document.addEventListener('click', (e) => {
+            if (!searchBox.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.innerHTML = '';
+            }
+        });
+    </script>
 
     <p id="review-msg"></p>
 
-
     <script>
-        document.getElementById('review-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+            document.getElementById('review-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-            const form = e.target;
-            const formData = new FormData(form);
+                const form = e.target;
+                const formData = new FormData(form);
 
-            const token = localStorage.getItem('token');
+                const token = localStorage.getItem('token');
 
-            const res = await fetch('/add-review', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                },
-                body: formData
+                const res = await fetch('/add-review', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: formData
+                });
+
+                const data = await res.json();
+                const msgEl = document.getElementById('review-msg');
+                if (res.ok) {
+                    msgEl.textContent = 'Review submitted!';
+                    msgEl.style.color = 'green';
+                    form.reset();
+
+                    // Reload reviews dynamically
+                    loadReviews();
+                } else {
+                    msgEl.textContent = data.message || 'Something went wrong.';
+                    msgEl.style.color = 'red';
+                }
             });
-
-            const data = await res.json();
-            const msgEl = document.getElementById('review-msg');
-            if (res.ok) {
-                msgEl.textContent = 'Review submitted!';
-                msgEl.style.color = 'green';
-                form.reset();
-
-                // Reload reviews dynamically
-                loadReviews();
-            } else {
-                msgEl.textContent = data.message || 'Something went wrong.';
-                msgEl.style.color = 'red';
-            }
-        });
-
     </script>
-
 
     <script>
         const token = localStorage.getItem('token');

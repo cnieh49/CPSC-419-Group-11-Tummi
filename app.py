@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from models import db, User
 from werkzeug.utils import secure_filename
 import os
+import requests
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -119,6 +120,27 @@ def add_review():
     db.session.commit()
     
     return jsonify({'message': 'Review added successfully'}), 201
+
+YELP_API_KEY = 'ummCpIkI7Wn4Rz804XeaIxsBSSNei5KFxzTl3vor1oJ2hl592M_qpKiy_bNf5eeb-hscmukmIZHWPmefXjO1W32Y_wznEL7pdfyHT9FDTYzymj2MEsQBxgUKPkPmZ3Yx'
+YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'
+
+@app.route('/yelp-search')
+def yelp_search():
+    query = request.args.get('query')
+    headers = {
+        'Authorization': f'Bearer {YELP_API_KEY}'
+    }
+    params = {
+        'term': query,
+        'location': 'New York, NY',  # Or use user-provided location
+        'limit': 10,
+        'categories': 'restaurants'
+    }
+
+    res = requests.get(YELP_API_BASE, headers=headers, params=params)
+    data = res.json()
+
+    return jsonify(data.get('businesses', []))
 
 @app.route('/me')
 @jwt_required()
