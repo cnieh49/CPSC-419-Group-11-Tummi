@@ -106,7 +106,7 @@
           <h3>${r.restaurant_name}</h3>
           <p>Location: ${r.location}</p>
           <p>Notes: ${r.notes || 'None'}</p>
-          ${r.photo_url ? `<img src="${r.photo_url}" width="200"/>` : ''}
+          ${r.photo_url ? `<img src="${r.photo_url}" width="400"/>` : ''}
           <hr/>
         `;
                             container.appendChild(div);
@@ -115,7 +115,7 @@
                 });
         }
         loadReviews();
-        
+
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/login-page';

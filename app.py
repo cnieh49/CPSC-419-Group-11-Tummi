@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from models import db, User
@@ -61,13 +61,13 @@ def user_reviews():
         'photo_url': r.photo_url
     } for r in reviews])
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/dashboard-page')
 def dashboard_page():
     return render_template('dashboard.html')
-
-    # reviews = Review.query.filter_by(user_id=user_id).all()
-    # return render_template('dashboard.html', reviews=reviews)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -104,7 +104,8 @@ def add_review():
         filename = secure_filename(photo.filename)
         photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         photo.save(photo_path)
-        photo_url = photo_path
+        photo_url = url_for('uploaded_file', filename=filename, _external=True)
+
 
     review = Review(
         restaurant_name=restaurant_name,
