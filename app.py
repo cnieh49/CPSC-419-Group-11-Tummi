@@ -55,9 +55,10 @@ def user_reviews():
     user_id = get_jwt_identity()
     reviews = Review.query.filter_by(user_id=user_id).all()
     return jsonify([{
-        'title': r.title,
-        'rating': r.rating,
-        'comment': r.comment
+        'restaurant_name': r.restaurant_name,
+        'location': r.location,
+        'notes': r.notes,
+        'photo_url': r.photo_url
     } for r in reviews])
 
 

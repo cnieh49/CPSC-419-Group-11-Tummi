@@ -12,6 +12,55 @@
     <p id="user-email"></p>
     <button onclick="logout()">Logout</button>
 
+    <div id="review-list"></div>
+
+    <h3>Add a New Review</h3>
+    <form id="review-form" enctype="multipart/form-data">
+        <input type="text" name="restaurant_name" placeholder="Restaurant name" required><br><br>
+        <input type="text" name="location" placeholder="Location" required><br><br>
+        <textarea name="notes" placeholder="Notes (optional)"></textarea><br><br>
+        <input type="file" name="photo"><br><br>
+        <button type="submit">Submit Review</button>
+    </form>
+
+    <p id="review-msg"></p>
+
+
+    <script>
+        document.getElementById('review-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            const token = localStorage.getItem('token');
+
+            const res = await fetch('/add-review', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            const msgEl = document.getElementById('review-msg');
+            if (res.ok) {
+                msgEl.textContent = 'Review submitted!';
+                msgEl.style.color = 'green';
+                form.reset();
+
+                // Reload reviews dynamically
+                loadReviews();
+            } else {
+                msgEl.textContent = data.message || 'Something went wrong.';
+                msgEl.style.color = 'red';
+            }
+        });
+
+    </script>
+
+
     <script>
         const token = localStorage.getItem('token');
         if (!token) {
@@ -37,28 +86,41 @@
                 window.location.href = '/login-page';
             });
 
-        fetch('/user-reviews', {
-            headers: {
-                'Authorization': 'Bearer ' + token
-            }
-        })
-            .then(res => res.json())
-            .then(reviews => {
-                const container = document.getElementById('review-list');
-                reviews.forEach(r => {
-                    const p = document.createElement('p');
-                    p.textContent = `${r.title} — ${r.rating}/5: ${r.comment}`;
-                    container.appendChild(p);
+
+        function loadReviews() {
+            fetch('/user-reviews', {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                }
+            })
+                .then(res => res.json())
+                .then(reviews => {
+                    const container = document.getElementById('review-list');
+                    container.innerHTML = ''; // Clear previous content
+                    if (reviews.length === 0) {
+                        container.innerHTML = '<p>No reviews yet.</p>';
+                    } else {
+                        reviews.forEach(r => {
+                            const div = document.createElement('div');
+                            div.innerHTML = `
+          <h3>${r.restaurant_name}</h3>
+          <p>Location: ${r.location}</p>
+          <p>Notes: ${r.notes || 'None'}</p>
+          ${r.photo_url ? `<img src="${r.photo_url}" width="200"/>` : ''}
+          <hr/>
+        `;
+                            container.appendChild(div);
+                        });
+                    }
                 });
-            });
-
-
+        }
+        loadReviews();
+        
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/login-page';
         }
     </script>
-    <div id="review-list"></div>
 </body>
 
 </html>
