@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Reviews</title>
+  <style>
+    /* General Styles */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    /* Form Container */
+    #reviewForm {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #reviewForm input,
+    #reviewForm textarea,
+    #reviewForm button {
+      width: calc(100% - 20px);
+      margin: 10px auto;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      display: block;
+    }
+
+    #reviewForm textarea {
+      resize: none;
+      height: 100px;
+    }
+
+    #reviewForm button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #reviewForm button:hover {
+      background-color: #0056b3;
+    }
+
+    /* Reviews Section */
+    #reviews {
+      max-width: 800px;
+      margin: 20px auto;
+    }
+
+    .review-card {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .review-card h3 {
+      margin-top: 0;
+    }
+
+    .review-card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 5px;
+    }
+    
+</style>
+</head>
+<body>
+  
+<h1>Submit a Restaurant Review</h1>
+
+<!-- Review Form -->
+<form id="reviewForm">
+   <input type="text" name="restaurant_name" placeholder="Restaurant Name" required><br>
+   <input type="text" name="location" placeholder="Location" required><br>
+   <textarea name="notes" placeholder="Write your review"></textarea><br>
+   <input type="file" name="photo" accept="image/*"><br>
+   <input type="hidden" name="user_id" value="123"> <!-- Replace with actual user ID -->
+   <button type="submit">Submit Review</button>
+</form>
+
+<h1>Submitted Reviews</h1>
+<div id="reviews"></div>
+
+<script>
+  // Submit new review
+  document.getElementById('reviewForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+
+    try {
+      const response = await fetch('/reviews', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert('Review submitted!');
+        loadReviews();
+      } else {
+        alert('Error submitting review.');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  // Load reviews
+  async function loadReviews() {
+    try {
+      const response = await fetch('/reviews');
+      const reviews = await response.json();
+
+      const reviewsContainer = document.getElementById('reviews');
+      reviewsContainer.innerHTML = '';
+
+      reviews.forEach((review) => {
+        const reviewDiv = document.createElement('div');
+        reviewDiv.classList.add('review-card');
+
+        reviewDiv.innerHTML = `
+          <h3>${review.restaurant_name}</h3>
+          <p>Location: ${review.location}</p>
+          <p>${review.notes}</p>
+          ${review.photo_url ? `<img src="${review.photo_url}" alt="Review Photo">` : ''}
+        `;
+        reviewsContainer.appendChild(reviewDiv);
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  // Load current reviews on page load
+  loadReviews();
+</script>
+
+</body>
+</html>
