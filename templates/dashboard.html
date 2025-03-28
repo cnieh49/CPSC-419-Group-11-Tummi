@@ -16,22 +16,21 @@
       window.location.href = '/login-page';
     }
 
-    // 👇 Fetch user info from protected API route
-    fetch('/me', {
+    // Fetch protected data from /dashboard API
+    fetch('/dashboard', {
       headers: {
         'Authorization': 'Bearer ' + token
       }
     })
     .then(res => {
-      if (!res.ok) throw new Error("Token invalid");
+      if (!res.ok) throw new Error("Unauthorized");
       return res.json();
     })
     .then(data => {
-      document.querySelector('h2').textContent = 'Welcome to your dashboard!';
+      document.querySelector('h2').textContent = data.message;
       document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
     })
     .catch(() => {
-      // If the token is invalid/expired
       localStorage.removeItem('token');
       window.location.href = '/login-page';
     });

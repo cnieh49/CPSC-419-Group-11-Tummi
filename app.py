@@ -44,7 +44,15 @@ def register_page():
 def dashboard():
     user_id = get_jwt_identity()
     #user = User.query.get(user_id)
-    #return render_template('dashboard.html', user=user)
+    return jsonify({
+        "email": user.email,
+        "message": f"Welcome to your dashboard, {user.email}!"
+    })
+
+@app.route('/dashboard-page')
+def dashboard_page():
+    #return render_template('dashboard.html')
+
     reviews = Review.query.filter_by(user_id=user_id).all()
     return render_template('dashboard.html', reviews=reviews)
 
@@ -97,6 +105,14 @@ def add_review():
     db.session.commit()
     
     return jsonify({'message': 'Review added successfully'}), 201
+
+@app.route('/me')
+@jwt_required()
+def me():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    return jsonify({ "email": user.email })
+
 
 if __name__ == '__main__':
     app.run(debug=True)

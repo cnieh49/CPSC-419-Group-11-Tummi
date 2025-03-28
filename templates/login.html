@@ -47,12 +47,12 @@
         if (res.ok) {
             localStorage.setItem('token', data.access_token);
             showMessage('Login successful! Redirecting...', 'success');
-            setTimeout(() => window.location.href = '/dashboard', 1000);
+            setTimeout(() => window.location.href = '/dashboard-page', 1000);
         } else {
             showMessage(data.message || 'Login failed.', 'error');
         }
       } catch (err) {
-        owMessage('Server error. Try again later.', 'error');
+        showMessage('Server error. Try again later.', 'error');
       }
     });
 
