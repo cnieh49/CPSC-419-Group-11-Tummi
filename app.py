@@ -138,7 +138,7 @@ def edit_review(review_id):
     if updated_note:
         curr_review.notes = updated_note
         db.session.commit()
-        return jsonify({'message': 'Note updated successfully', 'updated_note': updated_note}), 200
+        return jsonify({'message': 'Updated the selected review', 'updated_note': updated_note}), 200
     else:
         return jsonify({'message': 'Invalid input'}), 400
 

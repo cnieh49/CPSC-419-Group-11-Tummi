@@ -169,36 +169,38 @@
 
 
         function loadReviews() {
+            const token = localStorage.getItem('token')
             fetch('/user-reviews', {
                 headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + token
                 }
             })
-                .then(res => res.json())
-                .then(reviews => {
-                    const container = document.getElementById('review-list');
-                    container.innerHTML = ''; // Clear previous content
-                    if (reviews.length === 0) {
-                        container.innerHTML = '<p>No reviews yet.</p>';
-                    } else {
-                        reviews.forEach(r => {
-                            const div = document.createElement('div');
-                            div.innerHTML = `
-                                <h3>${r.restaurant_name}</h3>
-                                <p>Location: ${r.location}</p>
-                                <p id="note-${r.id}">Notes: ${r.notes || 'None'}</p>
-                                <p><small>Posted on: ${r.timestamp}</small></p>
+            .then(res => res.json())
+            .then(reviews => {
+                const container = document.getElementById('review-list');
+                container.innerHTML = ''; // Clear previous content
+                if (reviews.length === 0) {
+                    container.innerHTML = '<p>No reviews yet.</p>';
+                } else {
+                    reviews.forEach(r => {
+                        const div = document.createElement('div');
+                        div.id = `review-${r.id}`;
+                        div.innerHTML = `
+                            <h3>${r.restaurant_name}</h3>
+                            <p>Location: ${r.location}</p>
+                            <p id="note-${r.id}" contenteditable="false">Notes: ${r.notes || 'None'}</p>
+                            <p><small>Posted on: ${r.timestamp}</small></p>
 
-                                <button onclick="editReview('${r.id}')">Edit</button>
-                                <button onclick="deleteReview('${r.id}')">Delete</button>
-                                
-                                ${r.photo_url ? `<img src="${r.photo_url}" width="400"/>` : ''}
-                                <hr/>
-                            `;
-                            container.appendChild(div);
-                        });
-                    }
-                });
+                            <button onclick="editReview('${r.id}')">Edit</button>
+                            <button onclick="deleteReview('${r.id}')">Delete</button>
+                            
+                            ${r.photo_url ? `<img src="${r.photo_url}" width="400"/>` : ''}
+                            <hr/>
+                        `;
+                        container.appendChild(div);
+                    });
+                }
+            });
         }
         loadReviews();
 
@@ -210,30 +212,46 @@
 
     <script>
         function editReview(reviewId) {
-            const updated_note = prompt("Enter your updated note:");
-            const token = localStorage.getItem('token');
-        
-            if (updated_note) {
-                fetch(`/edit-review/${reviewId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
-                    },
-                    body: JSON.stringify({ notes: updated_note })
-                })
-                .then(response => response.json())
-                    .then(data => {
-                        if (data.message === 'Note updated successfully') {
-                            const given_note = document.getElementById(`note-${reviewId}`);
-                            given_note.textContent = `Notes: ${data.updated_note}`;
-                            alert(data.message);
-                        } else {
-                            alert(data.message);
-                        }
-                })
-                .catch(error => console.error('Error:', error));
-            }
+            const curr_note = document.getElementById(`note-${reviewId}`);
+            curr_note.contentEditable = true;
+            curr_note.focus();
+            
+            const button = document.querySelector(`#review-${reviewId} button[onclick="editReview('${reviewId}')"]`);
+            button.textContent = 'Save';
+            button.onclick = () => saveUpdate(reviewId);
+        }
+
+        function saveUpdate(reviewId) {
+            const curr_note = document.getElementById(`note-${reviewId}`);
+            const updated_note = curr_note.textContent.replace('Notes: ', '').trim(); 
+            const token = localStorage.getItem('token')
+
+            fetch(`/edit-review/${reviewId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ notes: updated_note })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Updated the selected review') {
+                    alert(data.message);
+                    curr_note.contentEditable = false; 
+                    curr_note.textContent = `Notes: ${data.updated_note}`; 
+
+                    const upd_button = document.querySelector(`#review-${reviewId} button[onclick="saveUpdate('${reviewId}')"]`);
+                    upd_button.textContent = 'Edit';
+                    upd_button.onclick = () => editReview(reviewId); 
+                    
+                    notes.reload();
+                    
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
         
         function deleteReview(reviewId) {
@@ -246,11 +264,9 @@
             })
             .then(response => response.json())
             .then(data => {
+                alert(data.message);
                 if (data.message === 'Deleted the selected review') {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message);
+                    location.reload(); 
                 }
             })
             .catch(error => console.error('Error:', error));
