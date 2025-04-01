@@ -58,6 +58,7 @@ def user_reviews():
     user_id = get_jwt_identity()
     reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
     return jsonify([{
+        'id': r.id,
         'restaurant_name': r.restaurant_name,
         'location': r.location,
         'notes': r.notes,
@@ -123,6 +124,37 @@ def add_review():
     db.session.commit()
     
     return jsonify({'message': 'Review added successfully'}), 201
+
+@app.route('/edit-review/<int:review_id>', methods=['PUT'])
+@jwt_required()
+def edit_review(review_id):
+    user_id = get_jwt_identity()
+    curr_review = Review.query.get(review_id)
+
+    if not curr_review or curr_review.user_id != user_id:
+        return jsonify({'message': 'Review not found or access denied'}), 404
+    
+    updated_note = request.json.get('notes', curr_review.notes)
+    if updated_note:
+        curr_review.notes = updated_note
+        db.session.commit()
+        return jsonify({'message': 'Note updated successfully', 'updated_note': updated_note}), 200
+    else:
+        return jsonify({'message': 'Invalid input'}), 400
+
+@app.route('/delete-review/<int:review_id>', methods=['DELETE'])
+@jwt_required()
+def delete_review(review_id):
+    user_id = get_jwt_identity()
+    curr_review = Review.query.get(review_id)
+
+    if not curr_review or curr_review.user_id != user_id:
+        return jsonify({'message': 'Review not found or access denied'}), 404
+    
+    db.session.delete(curr_review)
+    db.session.commit()
+
+    return jsonify({'message': 'Deleted the selected review'}), 200
 
 YELP_API_KEY = 'ummCpIkI7Wn4Rz804XeaIxsBSSNei5KFxzTl3vor1oJ2hl592M_qpKiy_bNf5eeb-hscmukmIZHWPmefXjO1W32Y_wznEL7pdfyHT9FDTYzymj2MEsQBxgUKPkPmZ3Yx'
 YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'

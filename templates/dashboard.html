@@ -186,8 +186,12 @@
                             div.innerHTML = `
                                 <h3>${r.restaurant_name}</h3>
                                 <p>Location: ${r.location}</p>
-                                <p>Notes: ${r.notes || 'None'}</p>
+                                <p id="note-${r.id}">Notes: ${r.notes || 'None'}</p>
                                 <p><small>Posted on: ${r.timestamp}</small></p>
+
+                                <button onclick="editReview('${r.id}')">Edit</button>
+                                <button onclick="deleteReview('${r.id}')">Delete</button>
+                                
                                 ${r.photo_url ? `<img src="${r.photo_url}" width="400"/>` : ''}
                                 <hr/>
                             `;
@@ -203,6 +207,56 @@
             window.location.href = '/login-page';
         }
     </script>
+
+    <script>
+        function editReview(reviewId) {
+            const updated_note = prompt("Enter your updated note:");
+            const token = localStorage.getItem('token');
+        
+            if (updated_note) {
+                fetch(`/edit-review/${reviewId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ notes: updated_note })
+                })
+                .then(response => response.json())
+                    .then(data => {
+                        if (data.message === 'Note updated successfully') {
+                            const given_note = document.getElementById(`note-${reviewId}`);
+                            given_note.textContent = `Notes: ${data.updated_note}`;
+                            alert(data.message);
+                        } else {
+                            alert(data.message);
+                        }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        }
+        
+        function deleteReview(reviewId) {
+            const token = localStorage.getItem('token');
+            fetch(`/delete-review/${reviewId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Deleted the selected review') {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+
 </body>
 
 </html>
