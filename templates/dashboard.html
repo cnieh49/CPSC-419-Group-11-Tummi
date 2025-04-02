@@ -224,7 +224,7 @@
         function saveUpdate(reviewId) {
             const curr_note = document.getElementById(`note-${reviewId}`);
             const updated_note = curr_note.textContent.replace('Notes: ', '').trim(); 
-            const token = localStorage.getItem('token')
+            const token = localStorage.getItem('token')            
 
             fetch(`/edit-review/${reviewId}`, {
                 method: 'PUT',
@@ -236,19 +236,15 @@
             })
             .then(response => response.json())
             .then(data => {
+                alert(data.message);
                 if (data.message === 'Updated the selected review') {
-                    alert(data.message);
-                    curr_note.contentEditable = false; 
+                    curr_note.contentEditable = false;
                     curr_note.textContent = `Notes: ${data.updated_note}`; 
-
-                    const upd_button = document.querySelector(`#review-${reviewId} button[onclick="saveUpdate('${reviewId}')"]`);
-                    upd_button.textContent = 'Edit';
-                    upd_button.onclick = () => editReview(reviewId); 
+                    curr_note.focus();
                     
-                    notes.reload();
-                    
-                } else {
-                    alert(data.message);
+                    const button = document.querySelector(`#review-${reviewId} button[onclick="editReview('${reviewId}')"]`);
+                    button.textContent = 'Edit';
+                    button.onclick = () => editReview(reviewId);  
                 }
             })
             .catch(error => console.error('Error:', error));
