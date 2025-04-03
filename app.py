@@ -6,10 +6,11 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 import requests
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'db.sqlite')}"
 app.config['JWT_SECRET_KEY'] = 'jwt-secret'
 app.config['UPLOAD_FOLDER'] = './uploads'
 
