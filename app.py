@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended.exceptions import NoAuthorizationError
 from models import db, User
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -256,11 +257,20 @@ def get_following():
 
 @app.route('/user/<int:user_id>')
 def user_profile_page(user_id):
+    current_user_id = None
+    try:
+        verify_jwt_in_request()  # This will raise if no token
+        current_user_id = get_jwt_identity()
+    except NoAuthorizationError:
+        pass  # Not logged in — that's fine
+
+    if current_user_id == user_id:
+        return redirect(url_for('dashboard_page'))
+
     user = User.query.get(user_id)
     if not user:
         return "User not found", 404
     return render_template('profile.html', user_id=user.id, user_email=user.email)
-
 
 @app.route('/user-reviews/<int:user_id>')
 @jwt_required()
