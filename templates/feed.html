@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Friends Feed</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    input, button { margin: 5px 0; padding: 5px; }
+    ul { list-style: none; padding: 0; }
+    li { margin-bottom: 8px; }
+    a { text-decoration: none; color: #007BFF; }
+    a:hover { text-decoration: underline; }
+    .btn {
+      padding: 5px 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      background-color: #f8f9fa;
+      color: #333;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .btn:hover {
+      background-color: #e2e6ea;
+    }
+    .btn-unfollow {
+      margin-left: 10px;
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+    .btn-unfollow:hover {
+      background-color: #f1b0b7;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Friends You're Following</h2>
+  <button onclick="window.location.href='/dashboard-page'" class="btn">← Back to Dashboard</button>
+
+  <h3>Follow a User</h3>
+  <input type="email" id="follow-email" placeholder="Enter email to follow">
+  <button class="btn" onclick="followUser()">Follow</button>
+  <p id="follow-msg"></p>
+
+  <h3>Following List</h3>
+  <ul id="friend-list">Loading...</ul>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login-page';
+    }
+
+    function loadFriends() {
+      fetch('/following', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(users => {
+        const list = document.getElementById('friend-list');
+        list.innerHTML = '';
+
+        if (users.length === 0) {
+          list.innerHTML = '<p>You are not following anyone yet.</p>';
+        } else {
+          users.forEach(user => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <a href="/user/${user.id}">${user.email}</a>
+              <button onclick="unfollowUser(${user.id})" class="btn btn-unfollow">Unfollow</button>
+            `;
+            list.appendChild(li);
+          });
+        }
+      });
+    }
+
+    function followUser() {
+      const email = document.getElementById('follow-email').value.trim();
+      const msg = document.getElementById('follow-msg');
+
+      if (!email) {
+        msg.textContent = 'Please enter an email.';
+        msg.style.color = 'red';
+        return;
+      }
+
+      fetch('/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(me => {
+        fetch('/all-users', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(res => res.json())
+        .then(users => {
+          const target = users.find(u => u.email === email);
+          if (!target) {
+            msg.textContent = 'User not found.';
+            msg.style.color = 'red';
+            return;
+          }
+          if (target.email === me.email) {
+            msg.textContent = 'You cannot follow yourself.';
+            msg.style.color = 'red';
+            return;
+          }
+
+          fetch(`/follow/${target.id}`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+          })
+          .then(res => res.json())
+          .then(data => {
+            msg.textContent = data.message;
+            msg.style.color = data.message.includes('Now following') ? 'green' : 'red';
+            loadFriends();
+          });
+        });
+      });
+    }
+
+    function unfollowUser(userId) {
+      if (!confirm('Are you sure you want to unfollow this user?')) return;
+
+      fetch(`/unfollow/${userId}`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        loadFriends();
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Something went wrong.');
+      });
+    }
+
+    loadFriends();
+  </script>
+
+</body>
+</html>

@@ -185,6 +185,95 @@ def me():
     user = User.query.get(user_id)
     return jsonify({ "email": user.email })
 
+@app.route('/feed-page')
+def feed_page():
+    return render_template('feed.html')
+
+@app.route('/feed')
+@jwt_required()
+def feed():
+    user = User.query.get(get_jwt_identity())
+    followed_ids = [u.id for u in user.followed.all()]
+
+    reviews = Review.query.filter(Review.user_id.in_(followed_ids)).order_by(Review.timestamp.desc()).all()
+
+    return jsonify([{
+        'id': r.id,
+        'restaurant_name': r.restaurant_name,
+        'location': r.location,
+        'notes': r.notes,
+        'photo_url': r.photo_url,
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        'user_id': r.user_id
+    } for r in reviews])
+
+@app.route('/all-users')
+@jwt_required()
+def all_users():
+    users = User.query.all()
+    return jsonify([{'id': u.id, 'email': u.email} for u in users])
+
+@app.route('/follow/<int:user_id>', methods=['POST'])
+@jwt_required()
+def follow_user(user_id):
+    current_user = User.query.get(get_jwt_identity())
+    target_user = User.query.get(user_id)
+
+    if not target_user or current_user.id == user_id:
+        return jsonify({'message': 'Invalid user'}), 400
+
+    if not current_user.followed.filter_by(id=target_user.id).first():
+        current_user.followed.append(target_user)
+        db.session.commit()
+        return jsonify({'message': f'Now following {target_user.email}'}), 200
+
+    return jsonify({'message': 'Already following'}), 400
+
+@app.route('/unfollow/<int:user_id>', methods=['POST'])
+@jwt_required()
+def unfollow_user(user_id):
+    current_user = User.query.get(get_jwt_identity())
+    target_user = User.query.get(user_id)
+
+    if current_user.followed.filter_by(id=target_user.id).first():
+        current_user.followed.remove(target_user)
+        db.session.commit()
+        return jsonify({'message': f'Unfollowed {target_user.email}'}), 200
+
+    return jsonify({'message': 'Not following this user'}), 400
+
+@app.route('/followers')
+@jwt_required()
+def get_followers():
+    user = User.query.get(get_jwt_identity())
+    return jsonify([{'id': u.id, 'email': u.email} for u in user.followers.all()])
+
+@app.route('/following')
+@jwt_required()
+def get_following():
+    user = User.query.get(get_jwt_identity())
+    return jsonify([{'id': u.id, 'email': u.email} for u in user.followed.all()])
+
+@app.route('/user/<int:user_id>')
+def user_profile_page(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return "User not found", 404
+    return render_template('profile.html', user_id=user.id, user_email=user.email)
+
+
+@app.route('/user-reviews/<int:user_id>')
+@jwt_required()
+def reviews_for_user(user_id):
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
+    return jsonify([{
+        'id': r.id,
+        'restaurant_name': r.restaurant_name,
+        'location': r.location,
+        'notes': r.notes,
+        'photo_url': r.photo_url,
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    } for r in reviews])
 
 if __name__ == '__main__':
     app.run(debug=True)
