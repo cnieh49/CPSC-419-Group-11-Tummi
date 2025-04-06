@@ -5,27 +5,6 @@
   <title>Dashboard</title>
   <style>
     body { font-family: sans-serif; }
-
-    #search-results {
-      border: 1px solid #ccc;
-      max-height: 200px;
-      overflow-y: auto;
-      width: 300px;
-      position: absolute;
-      background: white;
-      z-index: 10;
-    }
-
-    #search-results div {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-    }
-
-    #search-results div:hover {
-      background-color: #f0f0f0;
-    }
-
     .btn {
       padding: 5px 10px;
       font-size: 14px;
@@ -35,19 +14,17 @@
       cursor: pointer;
       border-radius: 5px;
     }
-
     .btn:hover { background-color: #e2e6ea; }
-
     .btn-delete:hover {
       background-color: #f8d7da;
       color: #721c24;
       border-color: #f5c6cb;
     }
-
-    .button-group {
-      margin-top: 10px;
+    .button-group { margin-top: 10px; }
+    .review-image {
+      max-width: 200px;
+      margin: 5px;
     }
-
     .modal-overlay {
       position: fixed;
       top: 0; left: 0;
@@ -60,7 +37,6 @@
       align-items: center;
       z-index: 999;
     }
-
     .modal {
       background: white;
       padding: 20px;
@@ -70,7 +46,6 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       position: relative;
     }
-
     .modal button.close-btn {
       position: absolute;
       top: 10px;
@@ -80,28 +55,16 @@
       font-size: 18px;
       cursor: pointer;
     }
-
-    .review-image {
-      max-width: 200px;
-      margin: 5px;
-    }
   </style>
 </head>
 <body>
-
   <h2>Loading your dashboard...</h2>
   <p id="user-email"></p>
-
   <button onclick="logout()">Logout</button>
   <button onclick="window.location.href='/feed-page'">Go to Friends Feed</button>
   <button onclick="window.location.href='/explore'" class="btn">Explore Restaurants</button>
-
-  <h3>Find a Restaurant</h3>
-  <input type="text" id="search-box" placeholder="Search restaurants..." autocomplete="off">
-  <div id="search-results"></div>
-
-  <div id="modal-container"></div>
   <div id="review-list"></div>
+  <div id="modal-container"></div>
 
   <script>
     const token = localStorage.getItem('token');
@@ -140,35 +103,20 @@
           reviews.forEach(r => {
             const div = document.createElement('div');
             div.id = `review-${r.id}`;
-
-            let picturesHTML = '';
-            if (r.pictures) {
-              try {
-                const pictures = JSON.parse(r.pictures);
-                pictures.forEach(url => {
-                  picturesHTML += `<img src="${url}" class="review-image">`;
-                });
-              } catch (e) {
-                console.error('Error parsing pictures:', e);
-              }
-            }
-
+            const pictures = JSON.parse(r.pictures || '[]');
+            const picturesHTML = pictures.map(url => `<img src="${url}" class="review-image">`).join('');
             div.innerHTML = `
               <h3>${r.restaurant_name}</h3>
               <p>Location: ${r.location}</p>
               <p id="note-${r.id}" contenteditable="false">Notes: ${r.notes || 'None'}</p>
               <p><small>Posted on: ${r.timestamp}</small></p>
               <div>${picturesHTML}</div>
-              <p id="likes-${r.id}">
-                ❤️ <span class="like-count">0</span>
-                <button class="btn btn-sm" onclick="showLikesPopup(${r.id})">View Likes</button>
-              </p>
+              <p id="likes-${r.id}">❤️ <span class="like-count">0</span></p>
               <div class="button-group">
-                <button onclick="editReview('${r.id}')" class="btn btn-sm">Edit</button>
-                <button onclick="deleteReview('${r.id}')" class="btn btn-sm btn-delete">Delete</button>
+                <button onclick="editReviewModal(${r.id})" class="btn">Edit Review</button>
+                <button onclick="deleteReview(${r.id})" class="btn btn-delete">Delete</button>
               </div>
-              <hr/>
-            `;
+              <hr/>`;
             container.appendChild(div);
             updateLikeCount(r.id);
           });
@@ -187,115 +135,6 @@
       });
     }
 
-    function showLikesPopup(reviewId) {
-      fetch(`/likes/${reviewId}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
-      .then(res => res.json())
-      .then(users => {
-        const modalContainer = document.getElementById('modal-container');
-        modalContainer.innerHTML = `
-          <div class="modal-overlay" onclick="closeModal(event)">
-            <div class="modal" onclick="event.stopPropagation()">
-              <button class="close-btn" onclick="closeModal(event)">❌</button>
-              <h3>Liked by:</h3>
-              <ul>${users.map(u => `<li>${u.email}</li>`).join('') || '<li>No likes yet</li>'}</ul>
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    function closeModal(event) {
-      const container = document.getElementById('modal-container');
-      container.innerHTML = '';
-      if (event) event.stopPropagation();
-    }
-
-    function openReviewModal(restaurant, location) {
-      const modalContainer = document.getElementById('modal-container');
-      modalContainer.innerHTML = `
-        <div class="modal-overlay" onclick="closeModal(event)">
-          <div class="modal" onclick="event.stopPropagation()">
-            <button class="close-btn" onclick="closeModal(event)">❌</button>
-            <h3>Write Your Review</h3>
-            <form id="review-form" enctype="multipart/form-data">
-              <input type="text" name="restaurant_name" value="${restaurant}" readonly><br><br>
-              <input type="text" name="location" value="${location}" readonly><br><br>
-              <textarea name="notes" placeholder="Your notes..."></textarea><br><br>
-              <input type="file" name="pictures" multiple><br><br>
-              <button type="submit" class="btn">Submit Review</button>
-            </form>
-            <p id="review-msg"></p>
-          </div>
-        </div>
-      `;
-
-      document.getElementById('review-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const formData = new FormData(form);
-
-        const res = await fetch('/add-review', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token },
-          body: formData
-        });
-
-        const data = await res.json();
-        const msgEl = document.getElementById('review-msg');
-
-        if (res.ok) {
-          msgEl.textContent = 'Review submitted!';
-          msgEl.style.color = 'green';
-          form.reset();
-          closeModal();
-          loadReviews();
-        } else {
-          msgEl.textContent = data.message || 'Something went wrong.';
-          msgEl.style.color = 'red';
-        }
-      });
-    }
-
-    function goToRestaurant(name) {
-      const encodedName = encodeURIComponent(name);
-      window.location.href = `/restaurant/${encodedName}`;
-    }
-
-    function editReview(reviewId) {
-      const curr_note = document.getElementById(`note-${reviewId}`);
-      curr_note.contentEditable = true;
-      curr_note.focus();
-
-      const button = document.querySelector(`#review-${reviewId} button[onclick="editReview('${reviewId}')"]`);
-      button.textContent = 'Save';
-      button.onclick = () => saveUpdate(reviewId);
-    }
-
-    function saveUpdate(reviewId) {
-      const curr_note = document.getElementById(`note-${reviewId}`);
-      const updated_note = curr_note.textContent.replace('Notes: ', '').trim();
-
-      fetch(`/edit-review/${reviewId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ notes: updated_note })
-      })
-      .then(res => res.json())
-      .then(data => {
-        alert(data.message);
-        if (data.message === 'Updated the selected review') {
-          curr_note.contentEditable = false;
-          curr_note.textContent = `Notes: ${data.updated_note}`;
-          loadReviews();
-        }
-      });
-    }
-
     function deleteReview(reviewId) {
       fetch(`/delete-review/${reviewId}`, {
         method: 'DELETE',
@@ -308,53 +147,76 @@
       });
     }
 
-    const searchBox = document.getElementById('search-box');
-    const resultsContainer = document.getElementById('search-results');
-
-    searchBox.addEventListener('input', async (e) => {
-      const query = e.target.value;
-      if (query.length < 3) {
-        resultsContainer.innerHTML = '';
-        return;
-      }
-
-      const res = await fetch(`/yelp-search?query=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      resultsContainer.innerHTML = '';
-
-      data.forEach(place => {
-        const div = document.createElement('div');
-        div.textContent = `${place.name} — ${place.location.address1}, ${place.location.city}`;
-        div.onclick = () => {
-          resultsContainer.innerHTML = '';
-          const restaurant = place.name;
-          const location = `${place.location.address1}, ${place.location.city}`;
-          showSearchModal(restaurant, location);
-        };
-        resultsContainer.appendChild(div);
-      });
-    });
-
-    function showSearchModal(restaurant, location) {
-      const modalContainer = document.getElementById('modal-container');
-      modalContainer.innerHTML = `
-        <div class="modal-overlay" onclick="closeModal(event)">
-          <div class="modal" onclick="event.stopPropagation()">
-            <button class="close-btn" onclick="closeModal(event)">❌</button>
-            <h3>${restaurant}</h3>
-            <p>${location}</p>
-            <button class="btn" onclick="openReviewModal('${restaurant}', '${location}')">Write a Review</button>
-            <button class="btn" onclick="goToRestaurant('${restaurant}')">View Friend Reviews</button>
-          </div>
-        </div>
-      `;
+    function closeModal(event) {
+      const container = document.getElementById('modal-container');
+      container.innerHTML = '';
+      if (event) event.stopPropagation();
     }
 
-    document.addEventListener('click', (e) => {
-      if (!searchBox.contains(e.target) && !resultsContainer.contains(e.target)) {
-        resultsContainer.innerHTML = '';
-      }
-    });
+    function editReviewModal(reviewId) {
+      fetch('/user-reviews', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(reviews => {
+        const review = reviews.find(r => r.id == reviewId);
+        if (!review) return alert('Review not found.');
+
+        const pictures = JSON.parse(review.pictures || '[]');
+
+        const modalContainer = document.getElementById('modal-container');
+        modalContainer.innerHTML = `
+          <div class="modal-overlay" onclick="closeModal(event)">
+            <div class="modal" onclick="event.stopPropagation()">
+              <button class="close-btn" onclick="closeModal(event)">❌</button>
+              <h3>Edit Review</h3>
+              <form id="edit-review-form" enctype="multipart/form-data">
+                <textarea name="notes">${review.notes || ''}</textarea><br><br>
+                <div><p><strong>Remove images:</strong></p>${pictures.map(url => `<label><input type="checkbox" name="remove_pictures" value="${url}"> Remove image <img src="${url}" class="review-image"></label>`).join('')}</div>
+                <p>Add new pictures:</p>
+                <input type="file" name="new_pictures" multiple><br><br>
+                <button type="submit" class="btn">Save Changes</button>
+              </form>
+            </div>
+          </div>`;
+
+        document.getElementById('edit-review-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const form = e.target;
+          const formData = new FormData(form);
+
+          const notes = form.notes.value.trim();
+          const updateNotes = fetch(`/edit-review/${reviewId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ notes })
+          });
+
+          const updateImages = fetch(`/edit-review-images/${reviewId}`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+          });
+
+          Promise.all([updateNotes, updateImages])
+            .then(async ([noteRes, imgRes]) => {
+              const noteData = await noteRes.json();
+              const imgData = await imgRes.json();
+
+              if (noteRes.ok && imgRes.ok) {
+                alert('Review updated successfully');
+                closeModal();
+                loadReviews();
+              } else {
+                alert(noteData.message || imgData.message || 'Update failed.');
+              }
+            });
+        });
+      });
+    }
   </script>
 </body>
 </html>

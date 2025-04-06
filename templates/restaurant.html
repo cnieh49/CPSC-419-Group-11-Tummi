@@ -39,17 +39,28 @@
 
   <script>
     const token = localStorage.getItem('token');
-    const restaurantName = decodeURIComponent(window.location.pathname.split('/').pop());
+    if (!token) {
+      window.location.href = '/login-page';
+    }
 
+    const restaurantName = decodeURIComponent(window.location.pathname.split('/').pop());
     document.getElementById('restaurant-title').textContent = restaurantName;
 
-    fetch(`/restaurant-reviews/${restaurantName}`, {
+    fetch(`/restaurant-reviews/${encodeURIComponent(restaurantName)}`, {
       headers: {
         'Authorization': 'Bearer ' + token
       }
     })
-    .then(res => res.json())
+    .then(async res => {
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to load reviews');
+      }
+      return res.json();
+    })
     .then(reviews => {
+      if (!Array.isArray(reviews)) throw new Error('Invalid data format');
+
       const container = document.getElementById('reviews');
       if (reviews.length === 0) {
         container.innerHTML = '<p>No reviews yet from your friends.</p>';
@@ -85,7 +96,7 @@
     })
     .catch(err => {
       console.error(err);
-      document.getElementById('reviews').innerHTML = '<p>Error loading reviews.</p>';
+      document.getElementById('reviews').innerHTML = `<p>Error loading reviews: ${err.message}</p>`;
     });
 
     function updateLikeCount(reviewId) {

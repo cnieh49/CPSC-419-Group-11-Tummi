@@ -417,7 +417,7 @@ def restaurant_page(name):
 def restaurant_reviews(restaurant_name):
     user = User.query.get(get_jwt_identity())
     followed_ids = [u.id for u in user.followed.all()]
-
+    
     reviews = Review.query.filter_by(restaurant_name=restaurant_name).filter(Review.user_id.in_(followed_ids)).order_by(Review.timestamp.desc()).all()
 
     return jsonify([{
