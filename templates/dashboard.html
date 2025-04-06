@@ -94,11 +94,11 @@
 
   <script>
       fetch('/dashboard-page', {
-          credentials: 'include'  // Send cookies automatically
+          credentials: 'include'  
       })
       .then(response => response.text())
       .then(data => {
-          console.log(data); // Handle response data
+          console.log(data);
       })
       .catch(error => {
           console.error('Error:', error);
@@ -255,6 +255,29 @@
         });
       });
     }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        try {
+            const response = await fetch('/edit-profile', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            });
+            
+            if (response.ok) {
+                alert('Profile updated successfully!');
+            } else {
+                alert('Failed to update profile. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+        }
+    });
   </script>
 </body>
 </html>

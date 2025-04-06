@@ -60,9 +60,18 @@ def register_page():
 def dashboard():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
+    
+    if user.first_name != "No name provided" and user.last_name != "No name provided":
+        display_name = f"{user.first_name} {user.last_name}"
+    elif user.first_name != "No name provided" and user.last_name == "No name provided":
+        display_name = f"{user.first_name}"
+    else:
+        display_name = user.email
+    
     return jsonify({
         "email": user.email,
-        "message": f"Welcome to Tummi, {user.email}!"
+        "display_name": display_name,
+        "message": f"Welcome to Tummi, {display_name}!"
     })
 
 @app.route('/user-reviews')
@@ -84,40 +93,33 @@ def user_reviews():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# @app.route('/dashboard-page')
-# def dashboard_page():
-#     return render_template('dashboard.html')
-
 @app.route('/dashboard-page')
 @jwt_required()
 def dashboard_page():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
 
+    display_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.email
+
     return render_template(
         'dashboard.html',
         first_name=user.first_name,
         last_name=user.last_name,
+        display_name=display_name,
         bio=user.bio,
         location=user.location,
         profile_picture=user.profile_picture
     )
-
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
     user = User.query.filter_by(email=data['email']).first()
 
-    # if user and user.check_password(data['password']):
-    #     token = create_access_token(identity=user.id)
-    #     return jsonify({'access_token': token}), 200
-    # return jsonify({'message': 'Invalid credentials'}), 401
-
     if user and user.check_password(data['password']):
         token = create_access_token(identity=user.id)
         resp = jsonify({'message': 'Login successful'})
-        set_access_cookies(resp, token)  # Set JWT in cookies
+        set_access_cookies(resp, token) 
         return resp, 200
         
     return jsonify({'message': 'Invalid credentials'}), 401
@@ -329,12 +331,15 @@ def user_profile_page(user_id):
     user = User.query.get(user_id)
     if not user:
         return "User not found", 404
+    
+    display_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.email
 
     return render_template(
         'profile.html',
         user_id=user.id,
         user_email=user.email,
         profile_picture=user.profile_picture,
+        display_name=display_name,
         first_name=user.first_name,
         last_name=user.last_name,
         bio=user.bio,

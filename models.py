@@ -15,10 +15,10 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     reviews = db.relationship('Review', backref='user', lazy=True)
-    first_name = db.Column(db.String(120), nullable=True, default="No name provided")
-    last_name = db.Column(db.String(120), nullable=True, default="No name provided")
-    bio = db.Column(db.Text, nullable=True, default="No bio provided")
-    location = db.Column(db.String(120), nullable=True, default="No location provided")
+    first_name = db.Column(db.String(120), nullable=True)
+    last_name = db.Column(db.String(120), nullable=True)
+    bio = db.Column(db.Text, nullable=True)
+    location = db.Column(db.String(120), nullable=True)
     profile_picture = db.Column(db.String(255), nullable=True)
 
     # Self-referential many-to-many

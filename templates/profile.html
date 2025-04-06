@@ -35,7 +35,7 @@
       {% if profile_picture %}
       <img src="{{ profile_picture }}" class="profile-pic">
       {% endif %}
-      <h1>{{ first_name }} {{ last_name }}</h1>
+      <h1>{{ display_name }}</h1>
       {% if location %}<p>📍 {{ location }}</p>{% endif %}
       {% if bio %}<p class="bio">{{ bio }}</p>{% endif %}
   </div>
