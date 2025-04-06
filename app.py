@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request, set_access_cookies, unset_jwt_cookies
 from flask_jwt_extended.exceptions import NoAuthorizationError
 from models import db, User, Like
 from werkzeug.utils import secure_filename
@@ -15,6 +15,9 @@ app.config['SECRET_KEY'] = 'secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'db.sqlite')}"
 app.config['JWT_SECRET_KEY'] = 'jwt-secret'
 app.config['UPLOAD_FOLDER'] = './uploads'
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_COOKIE_SECURE"] = False
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
 db.init_app(app)
 jwt = JWTManager(app)
@@ -81,17 +84,42 @@ def user_reviews():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+# @app.route('/dashboard-page')
+# def dashboard_page():
+#     return render_template('dashboard.html')
+
 @app.route('/dashboard-page')
+@jwt_required()
 def dashboard_page():
-    return render_template('dashboard.html')
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    return render_template(
+        'dashboard.html',
+        first_name=user.first_name,
+        last_name=user.last_name,
+        bio=user.bio,
+        location=user.location,
+        profile_picture=user.profile_picture
+    )
+
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
     user = User.query.filter_by(email=data['email']).first()
+
+    # if user and user.check_password(data['password']):
+    #     token = create_access_token(identity=user.id)
+    #     return jsonify({'access_token': token}), 200
+    # return jsonify({'message': 'Invalid credentials'}), 401
+
     if user and user.check_password(data['password']):
         token = create_access_token(identity=user.id)
-        return jsonify({'access_token': token}), 200
+        resp = jsonify({'message': 'Login successful'})
+        set_access_cookies(resp, token)  # Set JWT in cookies
+        return resp, 200
+        
     return jsonify({'message': 'Invalid credentials'}), 401
 
 @app.route('/register', methods=['POST'])

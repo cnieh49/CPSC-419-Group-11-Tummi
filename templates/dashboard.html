@@ -71,16 +71,16 @@
           <input type="file" name="profile_picture" accept="image/*">
 
           <label for="first_name">First Name:</label>
-          <input type="text" name="first_name" value="{{ first_name or 'No name provided' }}">
+          <input type="text" name="first_name" value="{{ first_name or '' }}" placeholder="First Name">
 
           <label for="last_name">Last Name:</label>
-          <input type="text" name="last_name" value="{{ last_name or 'No name provided' }}">
+          <input type="text" name="last_name" value="{{ last_name or '' }}" placeholder="Last Name">
 
           <label for="bio">Bio:</label>
-          <textarea name="bio">{{ bio or 'No bio provided' }}</textarea>
+          <textarea name="bio" placeholder="About you...">{{ bio or '' }}</textarea>
 
           <label for="location">Location:</label>
-          <input type="text" name="location" value="{{ location or 'No location provided' }}">
+          <input type="text" name="location" value="{{ location or '' }}" placeholder="Your Location">
 
           <label for="pictures">Pictures:</label>
           <input type="file" name="pictures" multiple accept="image/*">
@@ -92,6 +92,18 @@
   <div id="review-list"></div>
   <div id="modal-container"></div>
 
+  <script>
+      fetch('/dashboard-page', {
+          credentials: 'include'  // Send cookies automatically
+      })
+      .then(response => response.text())
+      .then(data => {
+          console.log(data); // Handle response data
+      })
+      .catch(error => {
+          console.error('Error:', error);
+      });
+  </script>
   <script>
     const token = localStorage.getItem('token');
     if (!token) window.location.href = '/login-page';
