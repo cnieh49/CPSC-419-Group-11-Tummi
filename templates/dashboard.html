@@ -287,9 +287,13 @@
         if (data.message === 'Updated the selected review') {
           curr_note.contentEditable = false;
           curr_note.textContent = `Notes: ${data.updated_note}`;
-          const button = document.querySelector(`#review-${reviewId} button[onclick]`);
-          button.textContent = 'Edit';
-          button.onclick = () => editReview(reviewId);
+
+          const button = document.querySelector(`#review-${reviewId} button[onclick="saveUpdate('${reviewId}')"]`);
+          if (button) {
+            button.textContent = 'Edit';
+            button.setAttribute('onclick', `editReview('${reviewId}')`);
+          }
+          loadReviews();
         }
       });
     }
