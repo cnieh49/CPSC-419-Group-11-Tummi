@@ -1,24 +1,102 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>User Profile</title>
+  <meta charset="UTF-8">
+  <title>Profile</title>
   <style>
     body { font-family: sans-serif; margin: 2rem; }
     .review { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
     img { max-width: 300px; margin-top: 10px; }
+    .btn {
+      padding: 5px 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      background-color: #f8f9fa;
+      color: #333;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .btn:hover {
+      background-color: #e2e6ea;
+    }
+    .btn-unfollow {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+    .btn-unfollow:hover {
+      background-color: #f1b0b7;
+    }
   </style>
 </head>
 <body>
+
   <h2>{{ user_email }}'s Reviews</h2>
-  <button onclick="window.location.href='/feed-page'">← Back to Following</button>
+  <button onclick="window.location.href='/feed-page'" class="btn">← Back to Feed</button>
+  <div id="follow-section" style="margin-top: 10px;"></div>
+  <hr>
   <div id="reviews">Loading reviews...</div>
 
   <script>
     const token = localStorage.getItem('token');
-    const userId = {{ user_id | safe }};
+    const viewedUserId = {{ user_id | tojson }};
+    let currentUserId = null;
 
-    fetch(`/user-reviews/${userId}`, {
-      headers: { 'Authorization': 'Bearer ' + token }
+    if (token) {
+      fetch('/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then(data => {
+        currentUserId = data.id;
+
+        if (currentUserId === viewedUserId) {
+          window.location.href = '/dashboard-page';
+          return;
+        }
+
+        maybeShowFollowButton();
+      })
+      .catch(() => {
+        console.log("User not logged in");
+      });
+    }
+
+    function maybeShowFollowButton() {
+      if (currentUserId && currentUserId !== viewedUserId) {
+        fetch('/following', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(res => res.json())
+        .then(followingList => {
+          const isFollowing = followingList.some(u => u.id === viewedUserId);
+          const followDiv = document.getElementById('follow-section');
+          followDiv.innerHTML = `
+            <button id="follow-btn" class="btn ${isFollowing ? 'btn-unfollow' : ''}">
+              ${isFollowing ? 'Unfollow' : 'Follow'}
+            </button>
+          `;
+          document.getElementById('follow-btn').onclick = () => {
+            const route = isFollowing ? '/unfollow/' : '/follow/';
+            fetch(`${route}${viewedUserId}`, {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+              alert(data.message);
+              location.reload();
+            });
+          };
+        });
+      }
+    }
+
+    fetch(`/user-reviews/${viewedUserId}`, {
+      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
     })
     .then(res => res.json())
     .then(reviews => {
@@ -37,11 +115,43 @@
             <p>${r.notes || 'No notes'}</p>
             ${r.photo_url ? `<img src="${r.photo_url}">` : ''}
             <p><small>Posted on ${r.timestamp}</small></p>
+            <div id="likes-${r.id}">
+              <span>❤️ <span class="like-count">0</span></span>
+              ${token ? `<button class="btn like-toggle" data-id="${r.id}">Loading...</button>` : ''}
+            </div>
           `;
           container.appendChild(div);
+          updateLikeCount(r.id);
         });
       }
     });
+
+    function updateLikeCount(reviewId) {
+      fetch(`/likes-count/${reviewId}`, {
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+      })
+      .then(res => res.json())
+      .then(data => {
+        const likeSection = document.querySelector(`#likes-${reviewId}`);
+        likeSection.querySelector('.like-count').textContent = data.count;
+
+        const btn = likeSection.querySelector('.like-toggle');
+        if (btn) {
+          btn.textContent = data.liked_by_user ? 'Unlike' : 'Like';
+          btn.onclick = () => toggleLike(reviewId, data.liked_by_user);
+        }
+      });
+    }
+
+    function toggleLike(reviewId, currentlyLiked) {
+      const route = currentlyLiked ? '/unlike/' : '/like/';
+      fetch(route + reviewId, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(() => updateLikeCount(reviewId));
+    }
   </script>
+
 </body>
 </html>

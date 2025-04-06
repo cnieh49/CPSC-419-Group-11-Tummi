@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
 from flask_jwt_extended.exceptions import NoAuthorizationError
-from models import db, User
+from models import db, User, Like
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
@@ -182,9 +182,8 @@ def yelp_search():
 @app.route('/me')
 @jwt_required()
 def me():
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    return jsonify({ "email": user.email })
+    user = User.query.get(get_jwt_identity())
+    return jsonify({ "email": user.email, "id": user.id })
 
 @app.route('/feed-page')
 def feed_page():
@@ -198,15 +197,18 @@ def feed():
 
     reviews = Review.query.filter(Review.user_id.in_(followed_ids)).order_by(Review.timestamp.desc()).all()
 
-    return jsonify([{
-        'id': r.id,
-        'restaurant_name': r.restaurant_name,
-        'location': r.location,
-        'notes': r.notes,
-        'photo_url': r.photo_url,
-        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-        'user_id': r.user_id
-    } for r in reviews])
+    return jsonify([
+        {
+            'id': r.id,
+            'restaurant_name': r.restaurant_name,
+            'location': r.location,
+            'notes': r.notes,
+            'photo_url': r.photo_url,
+            'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            'user_id': r.user_id,
+            'email': r.user.email
+        } for r in reviews
+    ])
 
 @app.route('/all-users')
 @jwt_required()
@@ -257,21 +259,16 @@ def get_following():
 
 @app.route('/user/<int:user_id>')
 def user_profile_page(user_id):
-    current_user_id = None
-    try:
-        verify_jwt_in_request()  # This will raise if no token
-        current_user_id = get_jwt_identity()
-    except NoAuthorizationError:
-        pass  # Not logged in — that's fine
-
-    if current_user_id == user_id:
-        return redirect(url_for('dashboard_page'))
-
     user = User.query.get(user_id)
     if not user:
         return "User not found", 404
-    return render_template('profile.html', user_id=user.id, user_email=user.email)
 
+    return render_template(
+        'profile.html',
+        user_id=user.id,
+        user_email=user.email
+    )
+    
 @app.route('/user-reviews/<int:user_id>')
 @jwt_required()
 def reviews_for_user(user_id):
@@ -284,6 +281,49 @@ def reviews_for_user(user_id):
         'photo_url': r.photo_url,
         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     } for r in reviews])
+    
+@app.route('/like/<int:review_id>', methods=['POST'])
+@jwt_required()
+def like_review(review_id):
+    user_id = get_jwt_identity()
+    existing = Like.query.filter_by(user_id=user_id, review_id=review_id).first()
+
+    if existing:
+        return jsonify({'message': 'Already liked'}), 400
+
+    like = Like(user_id=user_id, review_id=review_id)
+    db.session.add(like)
+    db.session.commit()
+    return jsonify({'message': 'Liked'}), 200
+
+@app.route('/unlike/<int:review_id>', methods=['POST'])
+@jwt_required()
+def unlike_review(review_id):
+    user_id = get_jwt_identity()
+    like = Like.query.filter_by(user_id=user_id, review_id=review_id).first()
+
+    if like:
+        db.session.delete(like)
+        db.session.commit()
+        return jsonify({'message': 'Unliked'}), 200
+
+    return jsonify({'message': 'Like not found'}), 404
+
+@app.route('/likes-count/<int:review_id>')
+@jwt_required()
+def likes_count(review_id):
+    count = Like.query.filter_by(review_id=review_id).count()
+    user_id = get_jwt_identity()
+    liked = Like.query.filter_by(user_id=user_id, review_id=review_id).first() is not None
+    return jsonify({'count': count, 'liked_by_user': liked})
+
+@app.route('/likes/<int:review_id>')
+@jwt_required()
+def get_likes(review_id):
+    from models import Like, User  # just in case
+    likes = Like.query.filter_by(review_id=review_id).all()
+    users = [User.query.get(l.user_id) for l in likes]
+    return jsonify([{'id': u.id, 'email': u.email} for u in users if u])
 
 if __name__ == '__main__':
     app.run(debug=True)

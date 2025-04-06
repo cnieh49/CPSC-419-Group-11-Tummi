@@ -10,6 +10,7 @@
     li { margin-bottom: 8px; }
     a { text-decoration: none; color: #007BFF; }
     a:hover { text-decoration: underline; }
+
     .btn {
       padding: 5px 10px;
       font-size: 14px;
@@ -19,17 +20,32 @@
       cursor: pointer;
       border-radius: 5px;
     }
+
     .btn:hover {
       background-color: #e2e6ea;
     }
+
     .btn-unfollow {
       margin-left: 10px;
       background-color: #f8d7da;
       border-color: #f5c6cb;
       color: #721c24;
     }
+
     .btn-unfollow:hover {
       background-color: #f1b0b7;
+    }
+
+    .review {
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+      margin-top: 20px;
+    }
+
+    img {
+      max-width: 300px;
+      display: block;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -46,8 +62,13 @@
   <h3>Following List</h3>
   <ul id="friend-list">Loading...</ul>
 
+  <hr>
+  <h3>Friends' Recent Reviews</h3>
+  <div id="friend-reviews">Loading...</div>
+
   <script>
     const token = localStorage.getItem('token');
+
     if (!token) {
       window.location.href = '/login-page';
     }
@@ -117,6 +138,7 @@
             msg.textContent = data.message;
             msg.style.color = data.message.includes('Now following') ? 'green' : 'red';
             loadFriends();
+            loadFriendReviews();
           });
         });
       });
@@ -133,6 +155,7 @@
       .then(data => {
         alert(data.message);
         loadFriends();
+        loadFriendReviews();
       })
       .catch(err => {
         console.error(err);
@@ -140,7 +163,70 @@
       });
     }
 
+    function loadFriendReviews() {
+      fetch('/feed', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(reviews => {
+        const container = document.getElementById('friend-reviews');
+        container.innerHTML = '';
+
+        if (reviews.length === 0) {
+          container.innerHTML = '<p>Your friends haven’t posted any reviews yet.</p>';
+        } else {
+          reviews.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+          reviews.forEach(r => {
+            const div = document.createElement('div');
+            div.classList.add('review');
+            div.innerHTML = `
+              <p><strong><a href="/user/${r.user_id}">${r.email}</a></strong> reviewed:</p>
+              <h4>${r.restaurant_name}</h4>
+              <p><strong>Location:</strong> ${r.location}</p>
+              <p>${r.notes || 'No notes'}</p>
+              ${r.photo_url ? `<img src="${r.photo_url}">` : ''}
+              <p><small>Posted on ${r.timestamp}</small></p>
+              <div id="likes-${r.id}">
+                <span>❤️ <span class="like-count">0</span></span>
+                <button class="btn like-toggle" data-id="${r.id}">Loading...</button>
+              </div>
+            `;
+            container.appendChild(div);
+            updateLikeCount(r.id);
+          });
+        }
+      });
+    }
+
+    function updateLikeCount(reviewId) {
+      fetch(`/likes-count/${reviewId}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const likeSection = document.querySelector(`#likes-${reviewId}`);
+        likeSection.querySelector('.like-count').textContent = data.count;
+
+        const btn = likeSection.querySelector('.like-toggle');
+        if (btn) {
+          btn.textContent = data.liked_by_user ? 'Unlike' : 'Like';
+          btn.onclick = () => toggleLike(reviewId, data.liked_by_user);
+        }
+      });
+    }
+
+    function toggleLike(reviewId, currentlyLiked) {
+      const route = currentlyLiked ? '/unlike/' : '/like/';
+      fetch(route + reviewId, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(() => updateLikeCount(reviewId));
+    }
+
     loadFriends();
+    loadFriendReviews();
   </script>
 
 </body>
