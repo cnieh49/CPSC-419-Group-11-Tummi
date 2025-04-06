@@ -84,6 +84,8 @@
   <button onclick="logout()">Logout</button>
   <button onclick="window.location.href='/feed-page'">Go to Friends Feed</button>
   <button onclick="window.location.href='/explore'" class="btn">Explore Restaurants</button>
+  <button class="btn" onclick="showFollowers()">Followers</button>
+  <button class="btn" onclick="showFollowing()">Following</button>
 
   <div class="profile-section">
       <h2>Your Profile</h2>
@@ -380,6 +382,50 @@
             console.error('Error updating profile:', error);
         }
     });
+
+    function showFollowers() {
+        fetch('/followers', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+          const users = data;
+          const content = users.length > 0
+            ? `<ul>${users.map(u => `<li>${u.email}</li>`).join('')}</ul>`
+            : `<p>You have no followers yet.</p>`;
+          
+          openSimpleModal("Your Followers", content);
+        });
+      }
+      
+      function showFollowing() {
+        fetch('/following', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+          const users = data;
+          const content = users.length > 0
+            ? `<ul>${users.map(u => `<li>${u.email}</li>`).join('')}</ul>`
+            : `<p>You're not following anyone yet.</p>`;
+          
+          openSimpleModal("Users You Follow", content);
+        });
+      }
+      
+      function openSimpleModal(title, bodyHtml) {
+        const modalContainer = document.getElementById('modal-container');
+        modalContainer.innerHTML = `
+          <div class="modal-overlay" onclick="closeModal(event)">
+            <div class="modal" onclick="event.stopPropagation()">
+              <button class="close-btn" onclick="closeModal(event)">❌</button>
+              <h3>${title}</h3>
+              ${bodyHtml}
+            </div>
+          </div>
+        `;
+      }
+      
   </script>
 </body>
 </html>
