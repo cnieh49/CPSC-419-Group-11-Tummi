@@ -82,12 +82,18 @@
       window.location.href = '/login-page';
     }
 
-    function performSearch() {
+    function performSearch(save = true, callback = null) {
       const query = document.getElementById('search-box').value.trim();
       const resultsDiv = document.getElementById('results');
       if (query.length < 3) {
         resultsDiv.innerHTML = '';
         return;
+      }
+
+      if (save) {
+        history.replaceState({ query, scrollY: window.scrollY }, '', window.location.href);
+        localStorage.setItem('explore_query', query);
+        localStorage.setItem('explore_scroll', window.scrollY);
       }
 
       fetch(`/yelp-search?query=${encodeURIComponent(query)}`, {
@@ -106,8 +112,28 @@
           `;
           resultsDiv.appendChild(div);
         });
+
+        if (callback) callback();
       });
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const state = history.state;
+      const savedQuery = localStorage.getItem('explore_query');
+      const savedScroll = parseInt(localStorage.getItem('explore_scroll') || '0');
+
+      if (state && state.query) {
+        document.getElementById('search-box').value = state.query;
+        performSearch(false, () => window.scrollTo(0, state.scrollY || 0));
+      } else if (savedQuery) {
+        document.getElementById('search-box').value = savedQuery;
+        performSearch(false, () => window.scrollTo(0, savedScroll));
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      localStorage.setItem('explore_scroll', window.scrollY);
+    });
   </script>
 </body>
 </html>
