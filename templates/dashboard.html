@@ -118,6 +118,9 @@
           <label for="location">Location:</label>
           <input type="text" name="location" value="{{ location or 'No location provided' }}">
 
+          <label for="pictures">Pictures:</label>
+          <input type="file" name="pictures" multiple accept="image/*">
+
           <button type="submit">Update Profile</button>
       </form>
   </div>
@@ -176,12 +179,27 @@
           reviews.forEach(r => {
             const div = document.createElement('div');
             div.id = `review-${r.id}`;
+            
+            let picturesHTML = '';
+            if (r.pictures) {
+              try {
+                const pictures = JSON.parse(r.pictures);
+                pictures.forEach(url => {
+                  picturesHTML += `<img src="${url}" style="max-width: 200px; margin: 5px;">`;
+                });
+              } catch (e) {
+                console.error('Error parsing pictures:', e);
+              }
+            }
+
             div.innerHTML = `
               <h3>${r.restaurant_name}</h3>
               <p>Location: ${r.location}</p>
               <p id="note-${r.id}" contenteditable="false">Notes: ${r.notes || 'None'}</p>
               <p><small>Posted on: ${r.timestamp}</small></p>
-              ${r.photo_url ? `<img src="${r.photo_url}" width="400"/>` : ''}
+              <div class="pictures">
+                ${picturesHTML}
+              </div>
               <p id="likes-${r.id}">
                 ❤️ <span class="like-count">0</span>
                 <button class="btn btn-sm" onclick="showLikesPopup(${r.id})">View Likes</button>
@@ -242,7 +260,7 @@
               <input type="text" name="restaurant_name" placeholder="Restaurant name" required readonly value="${restaurant}"><br><br>
               <input type="text" name="location" placeholder="Location" required readonly value="${location}"><br><br>
               <textarea name="notes" placeholder="Your notes..."></textarea><br><br>
-              <input type="file" name="photo"><br><br>
+              <input type="file" name="pictures" multiple>
               <button type="submit">Submit Review</button>
             </form>
             <p id="review-msg"></p>

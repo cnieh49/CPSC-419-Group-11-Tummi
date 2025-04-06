@@ -6,6 +6,7 @@ from models import db, User, Like
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
+import json
 import requests
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -26,8 +27,15 @@ class Review(db.Model):
     location = db.Column(db.String(120), nullable=False)
     notes = db.Column(db.Text, nullable=True)
     photo_url = db.Column(db.String(255), nullable=True)
+    pictures = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def get_pictures(self):
+        return json.loads(self.pictures or "[]")
+
+    def set_pictures(self, pictures_list):
+        self.pictures = json.dumps(pictures_list)
 
 with app.app_context():
     db.create_all()
@@ -65,6 +73,7 @@ def user_reviews():
         'location': r.location,
         'notes': r.notes,
         'photo_url': r.photo_url,
+        'pictures': r.pictures,
         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     } for r in reviews])
 
@@ -130,21 +139,20 @@ def add_review():
     location = request.form.get('location')
     notes = request.form.get('notes')
     
-    photo = request.files.get('photo')
-    photo_url = None
-
-    if photo:
-        filename = secure_filename(photo.filename)
-        photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        photo.save(photo_path)
-        photo_url = url_for('uploaded_file', filename=filename, _external=True)
-
+    pictures_files = request.files.getlist('pictures') 
+    pictures_urls = []
+    for picture in pictures_files:
+        if picture:
+            filename = secure_filename(picture.filename)
+            picture_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            picture.save(picture_path)
+            pictures_urls.append(url_for('uploaded_file', filename=filename, _external=True))
 
     review = Review(
         restaurant_name=restaurant_name,
         location=location,
         notes=notes,
-        photo_url=photo_url,
+        pictures=json.dumps(pictures_urls),  
         user_id=user_id,
     )
     
@@ -167,8 +175,12 @@ def edit_review(review_id):
         curr_review.notes = updated_note
         db.session.commit()
         return jsonify({'message': 'Updated the selected review', 'updated_note': updated_note}), 200
-    else:
+    if not updated_note:
         return jsonify({'message': 'Invalid input'}), 400
+    
+    new_pictures_list = request.json.get('pictures', None) 
+    if new_pictures_list is not None:
+        curr_review.set_pictures(new_pictures_list)
 
 @app.route('/delete-review/<int:review_id>', methods=['DELETE'])
 @jwt_required()
@@ -230,6 +242,7 @@ def feed():
             'location': r.location,
             'notes': r.notes,
             'photo_url': r.photo_url,
+            'pictures': r.pictures,
             'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             'user_id': r.user_id,
             'email': r.user.email
@@ -355,6 +368,15 @@ def get_likes(review_id):
     likes = Like.query.filter_by(review_id=review_id).all()
     users = [User.query.get(l.user_id) for l in likes]
     return jsonify([{'id': u.id, 'email': u.email} for u in users if u])
+
+import json
+
+@app.template_filter('parse_json')
+def parse_json(value):
+    try:
+        return json.loads(value or "[]")
+    except json.JSONDecodeError:
+        return []  # Return an empty list if parsing fails
 
 if __name__ == '__main__':
     app.run(debug=True)

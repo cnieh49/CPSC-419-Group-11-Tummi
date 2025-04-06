@@ -122,7 +122,8 @@
             <h4>${r.restaurant_name}</h4>
             <p><strong>Location:</strong> ${r.location}</p>
             <p>${r.notes || 'No notes'}</p>
-            ${r.photo_url ? `<img src="${r.photo_url}">` : ''}
+            ${r.pictures ? r.pictures.map(url => `<img src="${url}" style="max-width:100px;">`).join("") : ''}
+            <button onclick="editPictures(${r.id})" class="btn">Edit Pictures</button>
             <p><small>Posted on ${r.timestamp}</small></p>
             <div id="likes-${r.id}">
               <span>❤️ <span class="like-count">0</span></span>
@@ -134,6 +135,25 @@
         });
       }
     });
+
+    function editPictures(reviewId) {
+      const newPicturesUrls = prompt("Enter new picture URLs separated by commas:");
+      if (newPicturesUrls) {
+          fetch(`/edit-review/${reviewId}`, {
+              method: 'PUT',
+              headers: {
+                  'Authorization': 'Bearer ' + token,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ pictures: newPicturesUrls.split(",") })
+          })
+          .then(res => res.json())
+          .then(data => {
+              alert(data.message);
+              location.reload();
+          });
+      }
+    }
 
     function updateLikeCount(reviewId) {
       fetch(`/likes-count/${reviewId}`, {
