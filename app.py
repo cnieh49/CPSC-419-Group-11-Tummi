@@ -376,7 +376,7 @@ def parse_json(value):
     try:
         return json.loads(value or "[]")
     except json.JSONDecodeError:
-        return []  # Return an empty list if parsing fails
-
+        return [] 
+    
 if __name__ == '__main__':
     app.run(debug=True)
