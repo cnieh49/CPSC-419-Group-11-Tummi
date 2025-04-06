@@ -121,12 +121,16 @@
 
           const showEditButton = currentUserId === r.user_id;
 
+          let picturesHTML = '';
+          if (r.pictures && r.pictures.length > 0) {
+              picturesHTML = r.pictures.map(url => `<img src="${url}" style="max-width: 200px; margin: 5px;">`).join('');
+          }
+
           div.innerHTML = `
             <h4>${r.restaurant_name}</h4>
             <p><strong>Location:</strong> ${r.location}</p>
             <p>${r.notes || 'No notes'}</p>
-            ${r.pictures ? r.pictures.map(url => `<img src="${url}" style="max-width:100px;">`).join("") : ''}
-            
+            <div class="pictures">${picturesHTML}</div>
             ${showEditButton ? `
                     <button onclick="editPictures(${r.id})" class="btn">Edit Pictures</button>
                 ` : ''}

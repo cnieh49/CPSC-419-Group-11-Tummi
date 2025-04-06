@@ -5,6 +5,27 @@
   <title>Dashboard</title>
   <style>
     body { font-family: sans-serif; }
+
+    #search-results {
+      border: 1px solid #ccc;
+      max-height: 200px;
+      overflow-y: auto;
+      width: 300px;
+      position: absolute;
+      background: white;
+      z-index: 10;
+    }
+
+    #search-results div {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    #search-results div:hover {
+      background-color: #f0f0f0;
+      cursor: pointer;
+    }
+
     .btn {
       padding: 5px 10px;
       font-size: 14px;
@@ -88,6 +109,10 @@
           <button type="submit">Update Profile</button>
       </form>
   </div>
+
+  <h3>Find a Restaurant</h3>
+  <input type="text" id="search-box" placeholder="Search restaurants..." autocomplete="off">
+  <div id="search-results"></div>
 
   <div id="review-list"></div>
   <div id="modal-container"></div>
@@ -182,6 +207,83 @@
       .then(data => {
         alert(data.message);
         loadReviews();
+      });
+    }
+
+    const searchBox = document.getElementById('search-box');
+    const resultsContainer = document.getElementById('search-results');
+
+    searchBox.addEventListener('input', async (e) => {
+      const query = e.target.value;
+      if (query.length < 3) {
+        resultsContainer.innerHTML = '';
+        return;
+      }
+
+      const res = await fetch(`/yelp-search?query=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      resultsContainer.innerHTML = '';
+
+      data.forEach(place => {
+        const div = document.createElement('div');
+        div.textContent = `${place.name} — ${place.location.address1}, ${place.location.city}`;
+        div.onclick = () => {
+          resultsContainer.innerHTML = '';
+          openReviewModal(place.name, `${place.location.address1}, ${place.location.city}`);
+        };
+        resultsContainer.appendChild(div);
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!searchBox.contains(e.target) && !resultsContainer.contains(e.target)) {
+        resultsContainer.innerHTML = '';
+      }
+    });
+
+    function openReviewModal(restaurant, location) {
+      const modalContainer = document.getElementById('modal-container');
+      modalContainer.innerHTML = `
+        <div class="modal-overlay" onclick="closeModal(event)">
+          <div class="modal" onclick="event.stopPropagation()">
+            <button class="close-btn" onclick="closeModal(event)">❌</button>
+            <h3>Write Your Review</h3>
+            <form id="review-form" enctype="multipart/form-data">
+              <input type="text" name="restaurant_name" placeholder="Restaurant name" required readonly value="${restaurant}"><br><br>
+              <input type="text" name="location" placeholder="Location" required readonly value="${location}"><br><br>
+              <textarea name="notes" placeholder="Your notes..."></textarea><br><br>
+              <input type="file" name="pictures" multiple>
+              <button type="submit">Submit Review</button>
+            </form>
+            <p id="review-msg"></p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('review-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+
+        const res = await fetch('/add-review', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+
+        const data = await res.json();
+        const msgEl = document.getElementById('review-msg');
+
+        if (res.ok) {
+          msgEl.textContent = 'Review submitted!';
+          msgEl.style.color = 'green';
+          form.reset();
+          closeModal();
+          loadReviews();
+        } else {
+          msgEl.textContent = data.message || 'Something went wrong.';
+          msgEl.style.color = 'red';
+        }
       });
     }
 

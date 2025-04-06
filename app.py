@@ -356,6 +356,7 @@ def reviews_for_user(user_id):
         'location': r.location,
         'notes': r.notes,
         'photo_url': r.photo_url,
+        'pictures': r.get_pictures(),
         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     } for r in reviews])
     
