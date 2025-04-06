@@ -96,8 +96,31 @@
 <body>
   <h2>Loading your dashboard...</h2>
   <p id="user-email"></p>
+
   <button onclick="logout()">Logout</button>
   <button onclick="window.location.href='/feed-page'">Go to Friends Feed</button>
+
+  <div class="profile-section">
+      <h2>Your Profile</h2>
+      <form id="profileForm" enctype="multipart/form-data">
+          <label for="profile_picture">Profile Picture:</label>
+          <input type="file" name="profile_picture" accept="image/*">
+
+          <label for="first_name">First Name:</label>
+          <input type="text" name="first_name" value="{{ first_name or 'No name provided' }}">
+
+          <label for="last_name">Last Name:</label>
+          <input type="text" name="last_name" value="{{ last_name or 'No name provided' }}">
+
+          <label for="bio">Bio:</label>
+          <textarea name="bio">{{ bio or 'No bio provided' }}</textarea>
+
+          <label for="location">Location:</label>
+          <input type="text" name="location" value="{{ location or 'No location provided' }}">
+
+          <button type="submit">Update Profile</button>
+      </form>
+  </div>
 
   <h3>Find a Restaurant</h3>
   <input type="text" id="search-box" placeholder="Search restaurants..." autocomplete="off">
@@ -114,6 +137,7 @@
     if (!token) {
       window.location.href = '/login-page';
     }
+
 
     fetch('/dashboard', {
       headers: { 'Authorization': 'Bearer ' + token }
@@ -344,6 +368,30 @@
         resultsContainer.innerHTML = '';
       }
     });
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        try {
+            const response = await fetch('/edit-profile', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            });
+            
+            if (response.ok) {
+                alert('Profile updated successfully!');
+            } else {
+                alert('Failed to update profile. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+        }
+    });
+
   </script>
 </body>
 </html>

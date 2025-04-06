@@ -31,6 +31,15 @@
 </head>
 <body>
 
+  <div class="profile-header">
+      {% if profile_picture %}
+      <img src="{{ profile_picture }}" class="profile-pic">
+      {% endif %}
+      <h1>{{ first_name }} {{ last_name }}</h1>
+      {% if location %}<p>📍 {{ location }}</p>{% endif %}
+      {% if bio %}<p class="bio">{{ bio }}</p>{% endif %}
+  </div>
+
   <h2>{{ user_email }}'s Reviews</h2>
   <button onclick="window.location.href='/feed-page'" class="btn">← Back to Feed</button>
   <div id="follow-section" style="margin-top: 10px;"></div>

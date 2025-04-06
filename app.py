@@ -90,11 +90,37 @@ def register():
     data = request.json
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'message': 'Email already exists'}), 409
-    user = User(email=data['email'])
+    user = User(
+        email=data['email'],
+        first_name=data.get('first_name'), 
+        last_name=data.get('last_name') 
+    )
     user.set_password(data['password'])
     db.session.add(user)
     db.session.commit()
     return jsonify({'message': 'User registered successfully'}), 201
+
+@app.route('/edit-profile', methods=['POST'])
+@jwt_required()
+def edit_profile():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if 'profile_picture' in request.files:
+        photo = request.files['profile_picture']
+        if photo:
+            filename = secure_filename(photo.filename)
+            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            photo.save(photo_path)
+            user.profile_picture = url_for('uploaded_file', filename=filename, _external=True)
+    
+    user.first_name = request.form.get('first_name', user.first_name)
+    user.last_name = request.form.get('last_name', user.last_name)
+    user.bio = request.form.get('bio', user.bio)
+    user.location = request.form.get('location', user.location)
+    
+    db.session.commit()
+    return jsonify({'message': 'Profile updated successfully'}), 200
 
 @app.route('/add-review', methods=['POST'])
 @jwt_required()
@@ -266,7 +292,12 @@ def user_profile_page(user_id):
     return render_template(
         'profile.html',
         user_id=user.id,
-        user_email=user.email
+        user_email=user.email,
+        profile_picture=user.profile_picture,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        bio=user.bio,
+        location=user.location,
     )
     
 @app.route('/user-reviews/<int:user_id>')
