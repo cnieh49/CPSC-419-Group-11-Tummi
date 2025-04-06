@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <title>Dashboard</title>
   <style>
-    body {
-      font-family: sans-serif;
-    }
+    body { font-family: sans-serif; }
 
     #search-results {
       border: 1px solid #ccc;
@@ -21,11 +19,11 @@
     #search-results div {
       padding: 8px;
       border-bottom: 1px solid #eee;
+      cursor: pointer;
     }
 
     #search-results div:hover {
       background-color: #f0f0f0;
-      cursor: pointer;
     }
 
     .btn {
@@ -38,9 +36,7 @@
       border-radius: 5px;
     }
 
-    .btn:hover {
-      background-color: #e2e6ea;
-    }
+    .btn:hover { background-color: #e2e6ea; }
 
     .btn-delete:hover {
       background-color: #f8d7da;
@@ -52,12 +48,6 @@
       margin-top: 10px;
     }
 
-    .review-image {
-      display: block;
-      margin-bottom: 10px;
-    }
-
-    /* Modal overlay and content */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0;
@@ -90,65 +80,37 @@
       font-size: 18px;
       cursor: pointer;
     }
+
+    .review-image {
+      max-width: 200px;
+      margin: 5px;
+    }
   </style>
 </head>
-
 <body>
+
   <h2>Loading your dashboard...</h2>
   <p id="user-email"></p>
 
   <button onclick="logout()">Logout</button>
   <button onclick="window.location.href='/feed-page'">Go to Friends Feed</button>
-
-  <div class="profile-section">
-      <h2>Your Profile</h2>
-      <form id="profileForm" enctype="multipart/form-data">
-          <label for="profile_picture">Profile Picture:</label>
-          <input type="file" name="profile_picture" accept="image/*">
-
-          <label for="first_name">First Name:</label>
-          <input type="text" name="first_name" value="{{ first_name or 'No name provided' }}">
-
-          <label for="last_name">Last Name:</label>
-          <input type="text" name="last_name" value="{{ last_name or 'No name provided' }}">
-
-          <label for="bio">Bio:</label>
-          <textarea name="bio">{{ bio or 'No bio provided' }}</textarea>
-
-          <label for="location">Location:</label>
-          <input type="text" name="location" value="{{ location or 'No location provided' }}">
-
-          <label for="pictures">Pictures:</label>
-          <input type="file" name="pictures" multiple accept="image/*">
-
-          <button type="submit">Update Profile</button>
-      </form>
-  </div>
+  <button onclick="window.location.href='/explore'" class="btn">Explore Restaurants</button>
 
   <h3>Find a Restaurant</h3>
   <input type="text" id="search-box" placeholder="Search restaurants..." autocomplete="off">
   <div id="search-results"></div>
 
-  <!-- Modal Container (used for both review + likes) -->
   <div id="modal-container"></div>
-
   <div id="review-list"></div>
 
   <script>
     const token = localStorage.getItem('token');
-
-    if (!token) {
-      window.location.href = '/login-page';
-    }
-
+    if (!token) window.location.href = '/login-page';
 
     fetch('/dashboard', {
       headers: { 'Authorization': 'Bearer ' + token }
     })
-    .then(res => {
-      if (!res.ok) throw new Error("Unauthorized");
-      return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
       document.querySelector('h2').textContent = data.message;
       document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
@@ -172,20 +134,19 @@
       .then(reviews => {
         const container = document.getElementById('review-list');
         container.innerHTML = '';
-
         if (reviews.length === 0) {
           container.innerHTML = '<p>No reviews yet.</p>';
         } else {
           reviews.forEach(r => {
             const div = document.createElement('div');
             div.id = `review-${r.id}`;
-            
+
             let picturesHTML = '';
             if (r.pictures) {
               try {
                 const pictures = JSON.parse(r.pictures);
                 pictures.forEach(url => {
-                  picturesHTML += `<img src="${url}" style="max-width: 200px; margin: 5px;">`;
+                  picturesHTML += `<img src="${url}" class="review-image">`;
                 });
               } catch (e) {
                 console.error('Error parsing pictures:', e);
@@ -197,9 +158,7 @@
               <p>Location: ${r.location}</p>
               <p id="note-${r.id}" contenteditable="false">Notes: ${r.notes || 'None'}</p>
               <p><small>Posted on: ${r.timestamp}</small></p>
-              <div class="pictures">
-                ${picturesHTML}
-              </div>
+              <div>${picturesHTML}</div>
               <p id="likes-${r.id}">
                 ❤️ <span class="like-count">0</span>
                 <button class="btn btn-sm" onclick="showLikesPopup(${r.id})">View Likes</button>
@@ -240,13 +199,17 @@
             <div class="modal" onclick="event.stopPropagation()">
               <button class="close-btn" onclick="closeModal(event)">❌</button>
               <h3>Liked by:</h3>
-              <ul style="margin-top: 10px;">
-                ${users.length ? users.map(u => `<li>${u.email}</li>`).join('') : '<li>No likes yet</li>'}
-              </ul>
+              <ul>${users.map(u => `<li>${u.email}</li>`).join('') || '<li>No likes yet</li>'}</ul>
             </div>
           </div>
         `;
       });
+    }
+
+    function closeModal(event) {
+      const container = document.getElementById('modal-container');
+      container.innerHTML = '';
+      if (event) event.stopPropagation();
     }
 
     function openReviewModal(restaurant, location) {
@@ -257,11 +220,11 @@
             <button class="close-btn" onclick="closeModal(event)">❌</button>
             <h3>Write Your Review</h3>
             <form id="review-form" enctype="multipart/form-data">
-              <input type="text" name="restaurant_name" placeholder="Restaurant name" required readonly value="${restaurant}"><br><br>
-              <input type="text" name="location" placeholder="Location" required readonly value="${location}"><br><br>
+              <input type="text" name="restaurant_name" value="${restaurant}" readonly><br><br>
+              <input type="text" name="location" value="${location}" readonly><br><br>
               <textarea name="notes" placeholder="Your notes..."></textarea><br><br>
-              <input type="file" name="pictures" multiple>
-              <button type="submit">Submit Review</button>
+              <input type="file" name="pictures" multiple><br><br>
+              <button type="submit" class="btn">Submit Review</button>
             </form>
             <p id="review-msg"></p>
           </div>
@@ -295,10 +258,9 @@
       });
     }
 
-    function closeModal(event) {
-      const container = document.getElementById('modal-container');
-      container.innerHTML = '';
-      if (event) event.stopPropagation();
+    function goToRestaurant(name) {
+      const encodedName = encodeURIComponent(name);
+      window.location.href = `/restaurant/${encodedName}`;
     }
 
     function editReview(reviewId) {
@@ -329,12 +291,6 @@
         if (data.message === 'Updated the selected review') {
           curr_note.contentEditable = false;
           curr_note.textContent = `Notes: ${data.updated_note}`;
-
-          const button = document.querySelector(`#review-${reviewId} button[onclick="saveUpdate('${reviewId}')"]`);
-          if (button) {
-            button.textContent = 'Edit';
-            button.setAttribute('onclick', `editReview('${reviewId}')`);
-          }
           loadReviews();
         }
       });
@@ -343,16 +299,12 @@
     function deleteReview(reviewId) {
       fetch(`/delete-review/${reviewId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': 'Bearer ' + token
-        }
+        headers: { 'Authorization': 'Bearer ' + token }
       })
       .then(res => res.json())
       .then(data => {
         alert(data.message);
-        if (data.message === 'Deleted the selected review') {
-          loadReviews();
-        }
+        loadReviews();
       });
     }
 
@@ -375,41 +327,34 @@
         div.textContent = `${place.name} — ${place.location.address1}, ${place.location.city}`;
         div.onclick = () => {
           resultsContainer.innerHTML = '';
-          openReviewModal(place.name, `${place.location.address1}, ${place.location.city}`);
+          const restaurant = place.name;
+          const location = `${place.location.address1}, ${place.location.city}`;
+          showSearchModal(restaurant, location);
         };
         resultsContainer.appendChild(div);
       });
     });
+
+    function showSearchModal(restaurant, location) {
+      const modalContainer = document.getElementById('modal-container');
+      modalContainer.innerHTML = `
+        <div class="modal-overlay" onclick="closeModal(event)">
+          <div class="modal" onclick="event.stopPropagation()">
+            <button class="close-btn" onclick="closeModal(event)">❌</button>
+            <h3>${restaurant}</h3>
+            <p>${location}</p>
+            <button class="btn" onclick="openReviewModal('${restaurant}', '${location}')">Write a Review</button>
+            <button class="btn" onclick="goToRestaurant('${restaurant}')">View Friend Reviews</button>
+          </div>
+        </div>
+      `;
+    }
 
     document.addEventListener('click', (e) => {
       if (!searchBox.contains(e.target) && !resultsContainer.contains(e.target)) {
         resultsContainer.innerHTML = '';
       }
     });
-
-    document.getElementById('profileForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        
-        try {
-            const response = await fetch('/edit-profile', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: formData
-            });
-            
-            if (response.ok) {
-                alert('Profile updated successfully!');
-            } else {
-                alert('Failed to update profile. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error updating profile:', error);
-        }
-    });
-
   </script>
 </body>
 </html>
