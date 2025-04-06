@@ -469,5 +469,23 @@ def restaurant_reviews(restaurant_name):
 def explore_page():
     return render_template('explore.html')
 
+@app.route('/followers/<int:user_id>')
+@jwt_required()
+def get_followers_for_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+    return jsonify([{'id': u.id, 'email': u.email} for u in user.followers.all()])
+
+
+@app.route('/following/<int:user_id>')
+@jwt_required()
+def get_following_for_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+    return jsonify([{'id': u.id, 'email': u.email} for u in user.followed.all()])
+
+
 if __name__ == '__main__':
     app.run(debug=True)

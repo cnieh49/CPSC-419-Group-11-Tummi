@@ -46,6 +46,8 @@
   <hr>
   <div id="reviews">Loading reviews...</div>
 
+  <div id="modal-container"></div>
+
   <script>
     const token = localStorage.getItem('token');
     const viewedUserId = {{ user_id | tojson }};
@@ -67,14 +69,14 @@
           return;
         }
 
-        maybeShowFollowButton();
+        maybeShowFollowControls();
       })
       .catch(() => {
         console.log("User not logged in");
       });
     }
 
-    function maybeShowFollowButton() {
+    function maybeShowFollowControls() {
       if (currentUserId && currentUserId !== viewedUserId) {
         fetch('/following', {
           headers: { 'Authorization': 'Bearer ' + token }
@@ -87,6 +89,7 @@
             <button id="follow-btn" class="btn ${isFollowing ? 'btn-unfollow' : ''}">
               ${isFollowing ? 'Unfollow' : 'Follow'}
             </button>
+            ${isFollowing ? '<button class="btn" onclick="showFollowers()">Followers</button> <button class="btn" onclick="showFollowing()">Following</button>' : ''}
           `;
           document.getElementById('follow-btn').onclick = () => {
             const route = isFollowing ? '/unfollow/' : '/follow/';
@@ -102,6 +105,40 @@
           };
         });
       }
+    }
+
+    function showFollowers() {
+      fetch(`/followers/${viewedUserId}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => showListModal('Followers', data));
+    }
+
+    function showFollowing() {
+      fetch(`/following/${viewedUserId}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => showListModal('Following', data));
+    }
+
+    function showListModal(title, users) {
+      const modalContainer = document.getElementById('modal-container');
+      modalContainer.innerHTML = `
+        <div class="modal-overlay" onclick="closeModal(event)" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
+          <div class="modal" onclick="event.stopPropagation()" style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;">
+            <h3>${title}</h3>
+            <ul>${users.map(u => `<li>${u.email}</li>`).join('')}</ul>
+            <button class="btn" onclick="closeModal(event)">Close</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function closeModal(event) {
+      document.getElementById('modal-container').innerHTML = '';
+      if (event) event.stopPropagation();
     }
 
     fetch(`/user-reviews/${viewedUserId}`, {
@@ -132,9 +169,8 @@
             <p>${r.notes || 'No notes'}</p>
             <div class="pictures">${picturesHTML}</div>
             ${showEditButton ? `
-                    <button onclick="editPictures(${r.id})" class="btn">Edit Pictures</button>
-                ` : ''}
-
+              <button onclick="editPictures(${r.id})" class="btn">Edit Pictures</button>
+            ` : ''}
             <p><small>Posted on ${r.timestamp}</small></p>
             <div id="likes-${r.id}">
               <span>❤️ <span class="like-count">0</span></span>
