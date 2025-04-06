@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Explore Restaurants</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+    }
+    .search-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      max-width: 600px;
+      margin-top: 1rem;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      font-size: 18px;
+      margin-right: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button.search-btn {
+      width: 150px;
+      font-size: 16px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f8f9fa;
+      color: #333;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button.search-btn:hover {
+      background-color: #e2e6ea;
+    }
+    .result {
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+    .result h3 {
+      margin: 0 0 5px;
+    }
+    .result p {
+      margin: 0;
+    }
+    .btn {
+      padding: 5px 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      background-color: #f8f9fa;
+      color: #333;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 10px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover {
+      background-color: #e2e6ea;
+    }
+  </style>
+</head>
+<body>
+  <h2>Explore Restaurants</h2>
+  <button onclick="window.location.href='/dashboard-page'" class="btn">← Back to Dashboard</button>
+
+  <div class="search-container">
+    <input type="text" id="search-box" placeholder="Search restaurants by name or location..." onkeydown="if(event.key==='Enter'){event.preventDefault();performSearch();}">
+    <button class="search-btn" onclick="performSearch()">Search</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login-page';
+    }
+
+    function performSearch() {
+      const query = document.getElementById('search-box').value.trim();
+      const resultsDiv = document.getElementById('results');
+      if (query.length < 3) {
+        resultsDiv.innerHTML = '';
+        return;
+      }
+
+      fetch(`/yelp-search?query=${encodeURIComponent(query)}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        resultsDiv.innerHTML = '';
+        data.forEach(place => {
+          const div = document.createElement('div');
+          div.className = 'result';
+          div.innerHTML = `
+            <h3>${place.name}</h3>
+            <p>${place.location.address1}, ${place.location.city}</p>
+            <a href="/restaurant/${encodeURIComponent(place.name)}" class="btn">View Details</a>
+          `;
+          resultsDiv.appendChild(div);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
