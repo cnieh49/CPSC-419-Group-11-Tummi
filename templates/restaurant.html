@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Restaurant Page</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    .review { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 6px; }
+    .review h4 { margin: 0 0 5px; }
+    .review p { margin: 0; }
+    .btn {
+      padding: 5px 10px;
+      border: 1px solid #ccc;
+      background-color: #f8f9fa;
+      color: #333;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    .btn:hover {
+      background-color: #e2e6ea;
+    }
+    .like-btn {
+      margin-left: 10px;
+    }
+    img.review-img {
+      max-width: 200px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2 id="restaurant-title">Loading Restaurant...</h2>
+  <button onclick="window.location.href='/explore'" class="btn">← Back to Explore</button>
+
+  <h3>Reviews by Your Friends</h3>
+  <div id="reviews"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login-page';
+    }
+
+    const restaurantName = decodeURIComponent(window.location.pathname.split('/').pop());
+    document.getElementById('restaurant-title').textContent = restaurantName;
+
+    fetch(`/restaurant-reviews/${encodeURIComponent(restaurantName)}`, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    })
+    .then(async res => {
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to load reviews');
+      }
+      return res.json();
+    })
+    .then(reviews => {
+      if (!Array.isArray(reviews)) throw new Error('Invalid data format');
+
+      const container = document.getElementById('reviews');
+      if (reviews.length === 0) {
+        container.innerHTML = '<p>No reviews yet from your friends.</p>';
+        return;
+      }
+
+      reviews.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'review';
+        let picturesHTML = '';
+        try {
+          const pics = JSON.parse(r.pictures || "[]");
+          pics.forEach(pic => {
+            picturesHTML += `<img class="review-img" src="${pic}" alt="Review image">`;
+          });
+        } catch (e) {}
+
+        const reviewId = r.id;
+
+        div.innerHTML = `
+          <h4><a href="/user/${r.user_id}">${r.email}</a></h4>
+          <p><strong>Location:</strong> ${r.location}</p>
+          <p><strong>Notes:</strong> ${r.notes}</p>
+          <p><small>Posted on: ${r.timestamp}</small></p>
+          ${picturesHTML}
+          <p id="likes-${reviewId}">❤️ <span class="like-count">0</span>
+            <button class="btn like-btn" onclick="toggleLike(${reviewId})">Like</button>
+          </p>
+        `;
+        container.appendChild(div);
+        updateLikeCount(reviewId);
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById('reviews').innerHTML = `<p>Error loading reviews: ${err.message}</p>`;
+    });
+
+    function updateLikeCount(reviewId) {
+      fetch(`/likes-count/${reviewId}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const el = document.querySelector(`#likes-${reviewId} .like-count`);
+        const btn = document.querySelector(`#likes-${reviewId} button`);
+        if (el) el.textContent = data.count;
+        if (btn) btn.textContent = data.liked_by_user ? 'Unlike' : 'Like';
+      });
+    }
+
+    function toggleLike(reviewId) {
+      if (!reviewId) return;
+      const button = document.querySelector(`#likes-${reviewId} button`);
+      const isUnlike = button.textContent === 'Unlike';
+
+      fetch(`/${isUnlike ? 'unlike' : 'like'}/${reviewId}`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(() => updateLikeCount(reviewId))
+      .catch(err => console.error(err));
+    }
+  </script>
+
+</body>
+</html>

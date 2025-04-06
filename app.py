@@ -378,5 +378,62 @@ def parse_json(value):
     except json.JSONDecodeError:
         return [] 
     
+@app.route('/edit-review-images/<int:review_id>', methods=['POST'])
+@jwt_required()
+def edit_review_images(review_id):
+    user_id = get_jwt_identity()
+    review = Review.query.get(review_id)
+
+    if not review or review.user_id != user_id:
+        return jsonify({'message': 'Review not found or access denied'}), 404
+
+    # Get current pictures from review
+    current_pics = review.get_pictures()
+
+    # Get list of URLs to remove from form
+    to_remove = request.form.getlist('remove_pictures')
+    updated_pics = [pic for pic in current_pics if pic not in to_remove]
+
+    # Handle any new picture uploads
+    new_pics = request.files.getlist('new_pictures')
+    for pic in new_pics:
+        if pic and pic.filename:
+            filename = secure_filename(pic.filename)
+            path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            pic.save(path)
+            updated_pics.append(url_for('uploaded_file', filename=filename, _external=True))
+
+    review.set_pictures(updated_pics)
+    db.session.commit()
+
+    return jsonify({'message': 'Images updated successfully', 'pictures': updated_pics}), 200
+
+@app.route('/restaurant/<name>')
+def restaurant_page(name):
+    return render_template('restaurant.html')
+
+@app.route('/restaurant-reviews/<restaurant_name>')
+@jwt_required()
+def restaurant_reviews(restaurant_name):
+    user = User.query.get(get_jwt_identity())
+    followed_ids = [u.id for u in user.followed.all()]
+    
+    reviews = Review.query.filter_by(restaurant_name=restaurant_name).filter(Review.user_id.in_(followed_ids)).order_by(Review.timestamp.desc()).all()
+
+    return jsonify([{
+        'id': r.id,
+        'restaurant_name': r.restaurant_name,
+        'location': r.location,
+        'notes': r.notes,
+        'pictures': r.pictures,
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        'user_id': r.user_id,
+        'email': r.user.email
+    } for r in reviews])
+    
+@app.route('/explore')
+def explore_page():
+    return render_template('explore.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
