@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: sans-serif; }
+    /* body { font-family: sans-serif; }
 
     #search-results {
       border: 1px solid #ccc;
@@ -45,7 +47,7 @@
     .review-image {
       max-width: 200px;
       margin: 5px;
-    }
+    } */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0;
@@ -78,57 +80,96 @@
     }
   </style>
 </head>
+
 <body>
-  <h2>Loading your dashboard...</h2>
-  <p id="user-email"></p>
-  <button onclick="logout()">Logout</button>
-  <button onclick="window.location.href='/feed-page'">Go to Friends Feed</button>
-  <button onclick="window.location.href='/explore'" class="btn">Explore Restaurants</button>
-  <button class="btn" onclick="showFollowers()">Followers</button>
-  <button class="btn" onclick="showFollowing()">Following</button>
-
-  <div class="profile-section">
-      <h2>Your Profile</h2>
-      <form id="profileForm" enctype="multipart/form-data">
-          <label for="profile_picture">Profile Picture:</label>
-          <input type="file" name="profile_picture" accept="image/*">
-
-          <label for="first_name">First Name:</label>
-          <input type="text" name="first_name" value="{{ first_name or '' }}" placeholder="First Name">
-
-          <label for="last_name">Last Name:</label>
-          <input type="text" name="last_name" value="{{ last_name or '' }}" placeholder="Last Name">
-
-          <label for="bio">Bio:</label>
-          <textarea name="bio" placeholder="About you...">{{ bio or '' }}</textarea>
-
-          <label for="location">Location:</label>
-          <input type="text" name="location" value="{{ location or '' }}" placeholder="Your Location">
-
-          <label for="pictures">Pictures:</label>
-          <input type="file" name="pictures" multiple accept="image/*">
-
-          <button type="submit">Update Profile</button>
-      </form>
+  <div
+    class="bg-white shadow-md p-6 rounded-md mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-semibold text-gray-800" id="dashboard-title">Loading your dashboard...</h2>
+      <p id="user-email" class="text-gray-600"></p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="logout()"
+        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">Logout</button>
+      <button onclick="window.location.href='/feed-page'"
+        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">Friends Feed</button>
+      <button onclick="window.location.href='/explore'"
+        class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md text-sm">Explore</button>
+      <button onclick="showFollowers()"
+        class="bg-gray-100 hover:bg-gray-200 border text-sm px-4 py-2 rounded-md">Followers</button>
+      <button onclick="showFollowing()"
+        class="bg-gray-100 hover:bg-gray-200 border text-sm px-4 py-2 rounded-md">Following</button>
+    </div>
   </div>
 
-  <h3>Find a Restaurant</h3>
-  <input type="text" id="search-box" placeholder="Search restaurants..." autocomplete="off">
-  <div id="search-results"></div>
 
-  <div id="review-list"></div>
+  <div class="bg-white shadow p-6 rounded-md mb-6 max-w-xl mx-auto">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Your Profile</h2>
+    <form id="profileForm" enctype="multipart/form-data" class="space-y-4">
+
+      <div>
+        <label for="profile_picture" class="block font-medium text-sm text-gray-700">Profile Picture</label>
+        <input type="file" name="profile_picture" accept="image/*"
+          class="block w-full mt-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:bg-gray-100 hover:file:bg-gray-200" />
+      </div>
+
+      <div>
+        <label class="block font-medium text-sm text-gray-700">First Name</label>
+        <input type="text" name="first_name" value="{{ first_name or '' }}" placeholder="First Name"
+          class="w-full border rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
+
+      <div>
+        <label class="block font-medium text-sm text-gray-700">Last Name</label>
+        <input type="text" name="last_name" value="{{ last_name or '' }}" placeholder="Last Name"
+          class="w-full border rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
+
+      <div>
+        <label class="block font-medium text-sm text-gray-700">Bio</label>
+        <textarea name="bio" placeholder="About you..." rows="3"
+          class="w-full border rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">{{ bio or '' }}</textarea>
+      </div>
+
+      <div>
+        <label class="block font-medium text-sm text-gray-700">Location</label>
+        <input type="text" name="location" value="{{ location or '' }}" placeholder="Your Location"
+          class="w-full border rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
+
+      <div>
+        <label class="block font-medium text-sm text-gray-700">Upload More Pictures</label>
+        <input type="file" name="pictures" multiple accept="image/*"
+          class="block w-full mt-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:bg-gray-100 hover:file:bg-gray-200" />
+      </div>
+
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md">
+        Update Profile
+      </button>
+    </form>
+  </div>
+
+  <div class="max-w-xl mx-auto mb-6">
+    <h3 class="text-lg font-semibold text-gray-800 mb-2">Find a Restaurant</h3>
+    <input type="text" id="search-box" placeholder="Search restaurants..." autocomplete="off"
+      class="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+    <div id="search-results"
+      class="mt-2 rounded-md shadow absolute bg-white z-50 w-full max-w-xl border border-gray-200 hidden"></div>
+  </div>
+
+  <div id="review-list" class="max-w-3xl mx-auto mt-8"></div>
   <div id="modal-container"></div>
 
   <script>
-      fetch('/dashboard-page', {
-          credentials: 'include'  
-      })
+    fetch('/dashboard-page', {
+      credentials: 'include'
+    })
       .then(response => response.text())
       .then(data => {
-          console.log(data);
+        console.log(data);
       })
       .catch(error => {
-          console.error('Error:', error);
+        console.error('Error:', error);
       });
   </script>
   <script>
@@ -138,16 +179,17 @@
     fetch('/dashboard', {
       headers: { 'Authorization': 'Bearer ' + token }
     })
-    .then(res => res.json())
-    .then(data => {
-      document.querySelector('h2').textContent = data.message;
-      document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
-      loadReviews();
-    })
-    .catch(() => {
-      localStorage.removeItem('token');
-      window.location.href = '/login-page';
-    });
+      .then(res => res.json())
+      .then(data => {
+        // document.querySelector('h2').textContent = data.message;
+        document.querySelector('#dashboard-title').textContent = data.message;
+        document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
+        loadReviews();
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        window.location.href = '/login-page';
+      });
 
     function logout() {
       localStorage.removeItem('token');
@@ -158,46 +200,66 @@
       fetch('/user-reviews', {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(reviews => {
-        const container = document.getElementById('review-list');
-        container.innerHTML = '';
-        if (reviews.length === 0) {
-          container.innerHTML = '<p>No reviews yet.</p>';
-        } else {
-          reviews.forEach(r => {
-            const div = document.createElement('div');
-            div.id = `review-${r.id}`;
-            const pictures = JSON.parse(r.pictures || '[]');
-            const picturesHTML = pictures.map(url => `<img src="${url}" class="review-image">`).join('');
-            div.innerHTML = `
-              <h3>${r.restaurant_name}</h3>
-              <p>Location: ${r.location}</p>
-              <p id="note-${r.id}" contenteditable="false">Notes: ${r.notes || 'None'}</p>
-              <p><small>Posted on: ${r.timestamp}</small></p>
-              <div>${picturesHTML}</div>
-              <p id="likes-${r.id}">❤️ <span class="like-count">0</span></p>
-              <div class="button-group">
-                <button onclick="editReviewModal(${r.id})" class="btn">Edit Review</button>
-                <button onclick="deleteReview(${r.id})" class="btn btn-delete">Delete</button>
-              </div>
-              <hr/>`;
-            container.appendChild(div);
-            updateLikeCount(r.id);
-          });
-        }
-      });
+        .then(res => res.json())
+        .then(reviews => {
+          const container = document.getElementById('review-list');
+          container.innerHTML = '';
+          if (reviews.length === 0) {
+            container.innerHTML = `<div class="text-center text-gray-500 italic mt-6">
+  <p>No reviews yet.</p>
+  <div class="mt-4 flex justify-center">
+    <div class="h-px w-1/2 bg-gray-300"></div>
+  </div>
+</div>
+`;
+          } else {
+            reviews.forEach(r => {
+              const div = document.createElement('div');
+              div.id = `review-${r.id}`;
+              const pictures = JSON.parse(r.pictures || '[]');
+              const picturesHTML = pictures.map(url => `<img src="${url}" class="review-image">`).join('');
+              div.className = "bg-white shadow-md rounded-lg p-5 mb-6 border border-gray-100";
+
+              div.innerHTML = `
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="text-lg font-semibold text-gray-800">${r.restaurant_name}</h3>
+    <p class="text-sm text-gray-500">${r.timestamp}</p>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-1"><span class="font-medium text-gray-700">Location:</span> ${r.location}</p>
+  <p class="text-sm text-gray-700 mb-2" id="note-${r.id}"><span class="font-medium">Notes:</span> ${r.notes || 'None'}</p>
+
+  ${picturesHTML ? `
+    <div class="flex flex-wrap gap-3 mb-3">
+      ${pictures.map(url => `<img src="${url}" class="rounded-md border shadow-sm w-40 h-auto object-cover">`).join('')}
+    </div>
+  ` : ''}
+
+  <p id="likes-${r.id}" class="text-sm text-gray-600 mb-2">❤️ <span class="like-count font-semibold text-red-500">0</span></p>
+
+  <div class="flex gap-2">
+    <button onclick="editReviewModal(${r.id})"
+            class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md">Edit</button>
+    <button onclick="deleteReview(${r.id})"
+            class="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md">Delete</button>
+  </div>
+`;
+              container.appendChild(div);
+              updateLikeCount(r.id);
+            });
+          }
+        });
     }
 
     function updateLikeCount(reviewId) {
       fetch(`/likes-count/${reviewId}`, {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(data => {
-        const el = document.querySelector(`#likes-${reviewId} .like-count`);
-        if (el) el.textContent = data.count;
-      });
+        .then(res => res.json())
+        .then(data => {
+          const el = document.querySelector(`#likes-${reviewId} .like-count`);
+          if (el) el.textContent = data.count;
+        });
     }
 
     function deleteReview(reviewId) {
@@ -205,11 +267,11 @@
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(data => {
-        alert(data.message);
-        loadReviews();
-      });
+        .then(res => res.json())
+        .then(data => {
+          alert(data.message);
+          loadReviews();
+        });
     }
 
     const searchBox = document.getElementById('search-box');
@@ -226,14 +288,21 @@
       const data = await res.json();
       resultsContainer.innerHTML = '';
 
+      if (data.length > 0) {
+        resultsContainer.classList.remove('hidden');
+      }
+
       data.forEach(place => {
         const div = document.createElement('div');
+        div.className = "px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-800 border-b";
         div.textContent = `${place.name} — ${place.location.address1}, ${place.location.city}`;
         div.onclick = () => {
           resultsContainer.innerHTML = '';
+          resultsContainer.classList.add('hidden');
           openReviewModal(place.name, `${place.location.address1}, ${place.location.city}`);
         };
         resultsContainer.appendChild(div);
+
       });
     });
 
@@ -247,19 +316,24 @@
       const modalContainer = document.getElementById('modal-container');
       modalContainer.innerHTML = `
         <div class="modal-overlay" onclick="closeModal(event)">
-          <div class="modal" onclick="event.stopPropagation()">
-            <button class="close-btn" onclick="closeModal(event)">❌</button>
-            <h3>Write Your Review</h3>
-            <form id="review-form" enctype="multipart/form-data">
-              <input type="text" name="restaurant_name" placeholder="Restaurant name" required readonly value="${restaurant}"><br><br>
-              <input type="text" name="location" placeholder="Location" required readonly value="${location}"><br><br>
-              <textarea name="notes" placeholder="Your notes..."></textarea><br><br>
-              <input type="file" name="pictures" multiple>
-              <button type="submit">Submit Review</button>
-            </form>
-            <p id="review-msg"></p>
-          </div>
-        </div>
+  <div class="modal bg-white p-6 rounded-lg shadow-lg w-full max-w-lg mx-auto relative" onclick="event.stopPropagation()">
+    <button class="absolute top-3 right-4 text-gray-500 hover:text-gray-700 text-lg" onclick="closeModal(event)">❌</button>
+    <h3 class="text-xl font-semibold text-gray-800 mb-4">Write Your Review</h3>
+    <form id="review-form" enctype="multipart/form-data" class="space-y-4">
+      <input type="text" name="restaurant_name" placeholder="Restaurant name" readonly
+             class="w-full px-4 py-2 border rounded-md bg-gray-100 text-sm" value="${restaurant}" />
+      <input type="text" name="location" placeholder="Location" readonly
+             class="w-full px-4 py-2 border rounded-md bg-gray-100 text-sm" value="${location}" />
+      <textarea name="notes" placeholder="Your notes..."
+                class="w-full border rounded-md px-4 py-2 text-sm resize-y focus:ring-2 focus:ring-green-400"></textarea>
+      <input type="file" name="pictures" multiple
+             class="block w-full mt-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:bg-gray-100 hover:file:bg-gray-200" />
+      <button type="submit"
+              class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm">Submit Review</button>
+    </form>
+    <p id="review-msg" class="text-sm mt-2 font-medium text-center"></p>
+  </div>
+</div>
       `;
 
       document.getElementById('review-form').addEventListener('submit', async (e) => {
@@ -299,15 +373,15 @@
       fetch('/user-reviews', {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(reviews => {
-        const review = reviews.find(r => r.id == reviewId);
-        if (!review) return alert('Review not found.');
+        .then(res => res.json())
+        .then(reviews => {
+          const review = reviews.find(r => r.id == reviewId);
+          if (!review) return alert('Review not found.');
 
-        const pictures = JSON.parse(review.pictures || '[]');
+          const pictures = JSON.parse(review.pictures || '[]');
 
-        const modalContainer = document.getElementById('modal-container');
-        modalContainer.innerHTML = `
+          const modalContainer = document.getElementById('modal-container');
+          modalContainer.innerHTML = `
           <div class="modal-overlay" onclick="closeModal(event)">
             <div class="modal" onclick="event.stopPropagation()">
               <button class="close-btn" onclick="closeModal(event)">❌</button>
@@ -322,100 +396,100 @@
             </div>
           </div>`;
 
-        document.getElementById('edit-review-form').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const form = e.target;
-          const formData = new FormData(form);
+          document.getElementById('edit-review-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
 
-          const notes = form.notes.value.trim();
-          const updateNotes = fetch(`/edit-review/${reviewId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({ notes })
-          });
-
-          const updateImages = fetch(`/edit-review-images/${reviewId}`, {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token },
-            body: formData
-          });
-
-          Promise.all([updateNotes, updateImages])
-            .then(async ([noteRes, imgRes]) => {
-              const noteData = await noteRes.json();
-              const imgData = await imgRes.json();
-
-              if (noteRes.ok && imgRes.ok) {
-                alert('Review updated successfully');
-                closeModal();
-                loadReviews();
-              } else {
-                alert(noteData.message || imgData.message || 'Update failed.');
-              }
+            const notes = form.notes.value.trim();
+            const updateNotes = fetch(`/edit-review/${reviewId}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+              },
+              body: JSON.stringify({ notes })
             });
+
+            const updateImages = fetch(`/edit-review-images/${reviewId}`, {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token },
+              body: formData
+            });
+
+            Promise.all([updateNotes, updateImages])
+              .then(async ([noteRes, imgRes]) => {
+                const noteData = await noteRes.json();
+                const imgData = await imgRes.json();
+
+                if (noteRes.ok && imgRes.ok) {
+                  alert('Review updated successfully');
+                  closeModal();
+                  loadReviews();
+                } else {
+                  alert(noteData.message || imgData.message || 'Update failed.');
+                }
+              });
+          });
         });
-      });
     }
 
     document.getElementById('profileForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        
-        try {
-            const response = await fetch('/edit-profile', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: formData
-            });
-            
-            if (response.ok) {
-                alert('Profile updated successfully!');
-            } else {
-                alert('Failed to update profile. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error updating profile:', error);
+      e.preventDefault();
+      const formData = new FormData(e.target);
+
+      try {
+        const response = await fetch('/edit-profile', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formData
+        });
+
+        if (response.ok) {
+          alert('Profile updated successfully!');
+        } else {
+          alert('Failed to update profile. Please try again.');
         }
+      } catch (error) {
+        console.error('Error updating profile:', error);
+      }
     });
 
     function showFollowers() {
-        fetch('/followers', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        })
+      fetch('/followers', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
         .then(res => res.json())
         .then(data => {
           const users = data;
           const content = users.length > 0
             ? `<ul>${users.map(u => `<li>${u.email}</li>`).join('')}</ul>`
             : `<p>You have no followers yet.</p>`;
-          
+
           openSimpleModal("Your Followers", content);
         });
-      }
-      
-      function showFollowing() {
-        fetch('/following', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        })
+    }
+
+    function showFollowing() {
+      fetch('/following', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
         .then(res => res.json())
         .then(data => {
           const users = data;
           const content = users.length > 0
             ? `<ul>${users.map(u => `<li>${u.email}</li>`).join('')}</ul>`
             : `<p>You're not following anyone yet.</p>`;
-          
+
           openSimpleModal("Users You Follow", content);
         });
-      }
-      
-      function openSimpleModal(title, bodyHtml) {
-        const modalContainer = document.getElementById('modal-container');
-        modalContainer.innerHTML = `
+    }
+
+    function openSimpleModal(title, bodyHtml) {
+      const modalContainer = document.getElementById('modal-container');
+      modalContainer.innerHTML = `
           <div class="modal-overlay" onclick="closeModal(event)">
             <div class="modal" onclick="event.stopPropagation()">
               <button class="close-btn" onclick="closeModal(event)">❌</button>
@@ -424,8 +498,9 @@
             </div>
           </div>
         `;
-      }
-      
+    }
+
   </script>
 </body>
+
 </html>
