@@ -1,43 +1,76 @@
-<h2>Register</h2>
-<form id="register-form">
-  <input type="email" id="email" placeholder="Email" required><br>
-  <input type="password" id="password" placeholder="Password" required><br>
-  <button type="submit">Register</button>
-</form>
-<p id="message"></p>
-<p>Already have an account? <a href="/login-page">Log in here</a></p>
+<!DOCTYPE html>
+<html lang="en">
 
-<script>
-  const form = document.getElementById('register-form');
-  const messageEl = document.getElementById('message');
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    if (!email || !password) {
-      showMessage('Fill in both fields.', 'error');
-      return;
+<head>
+  <meta charset="UTF-8">
+  <title>Register</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .error {
+      color: red;
     }
 
-    const res = await fetch('/register', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ email, password })
+    .success {
+      color: green;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">Register</h2>
+
+    <form id="register-form" class="space-y-4">
+      <input type="email" id="email" placeholder="Email" required
+        class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+
+      <input type="password" id="password" placeholder="Password" required
+        class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+
+      <button type="submit"
+        class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">Register</button>
+    </form>
+
+    <p id="message" class="text-center mt-4 font-medium"></p>
+
+    <p class="text-sm text-center text-gray-600 mt-4">Already have an account? <a href="/login-page">Log in here</a></p>
+  </div>
+
+  <script>
+    const form = document.getElementById('register-form');
+    const messageEl = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (!email || !password) {
+        showMessage('Fill in both fields.', 'error');
+        return;
+      }
+
+      const res = await fetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showMessage('Registration successful! Go to login.', 'success');
+        setTimeout(() => window.location.href = '/login-page', 1500);
+      } else {
+        showMessage(data.message || 'Registration failed.', 'error');
+      }
     });
-    const data = await res.json();
 
-    if (res.ok) {
-      showMessage('Registration successful! Go to login.', 'success');
-      setTimeout(() => window.location.href = '/login-page', 1500);
-    } else {
-      showMessage(data.message || 'Registration failed.', 'error');
+    function showMessage(text, type) {
+      messageEl.textContent = text;
+      messageEl.className = type;
     }
-  });
+  </script>
 
-  function showMessage(text, type) {
-    messageEl.textContent = text;
-    messageEl.className = type;
-  }
-</script>
+</body>
+
+</html>
