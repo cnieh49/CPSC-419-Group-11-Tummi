@@ -6,51 +6,10 @@
   <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* body { font-family: sans-serif; }
-
-    #search-results {
-      border: 1px solid #ccc;
-      max-height: 200px;
-      overflow-y: auto;
-      width: 300px;
-      position: absolute;
-      background: white;
-      z-index: 10;
-    }
-
-    #search-results div {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-    }
-
-    #search-results div:hover {
-      background-color: #f0f0f0;
-      cursor: pointer;
-    }
-
-    .btn {
-      padding: 5px 10px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      background-color: #f8f9fa;
-      color: #333;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    .btn:hover { background-color: #e2e6ea; }
-    .btn-delete:hover {
-      background-color: #f8d7da;
-      color: #721c24;
-      border-color: #f5c6cb;
-    }
-    .button-group { margin-top: 10px; }
-    .review-image {
-      max-width: 200px;
-      margin: 5px;
-    } */
     .modal-overlay {
       position: fixed;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
       background: rgba(0, 0, 0, 0.5);
@@ -60,15 +19,17 @@
       align-items: center;
       z-index: 999;
     }
+
     .modal {
       background: white;
       padding: 20px;
       border-radius: 8px;
       max-width: 500px;
       width: 90%;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
       position: relative;
     }
+
     .modal button.close-btn {
       position: absolute;
       top: 10px;
@@ -89,8 +50,6 @@
       <p id="user-email" class="text-gray-600"></p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <button onclick="logout()"
-        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">Logout</button>
       <button onclick="window.location.href='/feed-page'"
         class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">Friends Feed</button>
       <button onclick="window.location.href='/explore'"
@@ -99,6 +58,8 @@
         class="bg-gray-100 hover:bg-gray-200 border text-sm px-4 py-2 rounded-md">Followers</button>
       <button onclick="showFollowing()"
         class="bg-gray-100 hover:bg-gray-200 border text-sm px-4 py-2 rounded-md">Following</button>
+      <button onclick="logout()"
+        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">Logout</button>
     </div>
   </div>
 
@@ -106,6 +67,9 @@
   <div class="bg-white shadow p-6 rounded-md mb-6 max-w-xl mx-auto">
     <h2 class="text-xl font-semibold text-gray-800 mb-4">Your Profile</h2>
     <form id="profileForm" enctype="multipart/form-data" class="space-y-4">
+      <p id="profile-success-msg"
+        class="text-sm mt-2 text-green-600 hidden transition-opacity duration-300 opacity-100">
+        Profile updated successfully!</p>
 
       <div>
         <label for="profile_picture" class="block font-medium text-sm text-gray-700">Profile Picture</label>
@@ -448,7 +412,28 @@
         });
 
         if (response.ok) {
-          alert('Profile updated successfully!');
+          const successMsg = document.getElementById('profile-success-msg');
+
+          successMsg.classList.remove('hidden', 'opacity-0');
+          successMsg.classList.add('opacity-100');
+
+          setTimeout(() => {
+            successMsg.classList.add('opacity-0');
+            setTimeout(() => {
+              successMsg.classList.add('hidden');
+            }, 300);
+          }, 3000);
+
+          fetch('/dashboard', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          })
+            .then(res => res.json())
+            .then(data => {
+              document.getElementById('dashboard-title').textContent = data.message;
+            });
+
         } else {
           alert('Failed to update profile. Please try again.');
         }
