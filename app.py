@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request, set_access_cookies, unset_jwt_cookies
 from flask_jwt_extended.exceptions import NoAuthorizationError
@@ -139,10 +139,30 @@ def register():
     db.session.commit()
     return jsonify({'message': 'User registered successfully'}), 201
 
-@app.route('/profile-page')
-def profile_page():
-    return render_template('profile.html')
+# @app.route('/profile-page')
+# def profile_page():
+#     return render_template('profile.html')
 
+@app.route('/profile-page')
+@jwt_required()
+def profile_page():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    response = make_response(render_template(
+        'profile.html',
+        first_name=user.first_name or '',
+        last_name=user.last_name or '',
+        bio=user.bio or '',
+        location=user.location or '',
+        profile_picture=user.profile_picture or ''
+    ))
+
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response
 
 @app.route('/edit-profile', methods=['POST'])
 @jwt_required()
@@ -176,7 +196,8 @@ def get_profile():
         'last_name': user.last_name or '',
         'bio': user.bio or '',
         'location': user.location or '',
-        'profile_picture_url': user.profile_picture_url  
+        'profile_picture': user.profile_picture or ''
+        #'profile_picture_url': user.profile_picture_url
     })
 
 @app.route('/add-review', methods=['POST'])

@@ -18,13 +18,16 @@
 
     <!-- Profile display mode -->
     <div id="profile-view" class="space-y-4">
-      <div class="text-center">
-        <img id="profile-pic" src="" alt="Profile Picture" class="w-24 h-24 mx-auto rounded-full object-cover shadow" />
-      </div>
-      <p><strong>Name:</strong> <span id="display-name" class="text-gray-700"></span></p>
-      <p><strong>Email:</strong> <span id="display-email" class="text-gray-700"></span></p>
-      <p><strong>Location:</strong> <span id="display-location" class="text-gray-700"></span></p>
-      <p><strong>Bio:</strong> <span id="display-bio" class="text-gray-700"></span></p>
+      {% if profile_picture %}
+          <img src="{{ profile_picture }}" alt="Profile Picture" width="150" height="150">
+      {% else %}
+          <p>No profile picture uploaded.</p>
+      {% endif %}
+
+      <p><strong>First Name:</strong> {{ first_name }}</p>
+      <p><strong>Last Name:</strong> {{ last_name }}</p>
+      <p><strong>Location:</strong> {{ location }}</p>
+      <p><strong>Bio:</strong> {{ bio }}</p>
 
       <button onclick="toggleEdit(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">Edit
         Profile</button>
@@ -32,6 +35,15 @@
 
     <!-- Profile edit mode -->
     <form id="profile-edit" class="space-y-4 hidden" enctype="multipart/form-data">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Current Profile Picture</label>
+        {% if profile_picture %}
+          <img src="{{ profile_picture }}" alt="Current Profile Picture" class="h-32 w-32 mb-2 border border-gray-300">
+        {% else %}
+          <p class="text-sm text-gray-500">No profile picture uploaded</p>
+        {% endif %}
+      </div>
+
       <input type="file" name="profile_picture" accept="image/*"
         class="block w-full text-sm text-gray-600 file:px-4 file:py-2 file:rounded-md file:bg-gray-100 hover:file:bg-gray-200" />
 
@@ -44,7 +56,7 @@
         <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">Save
           Changes</button>
         <button type="button" onclick="toggleEdit(false)"
-          class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md">Cancel</button>
+          class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md">Return to Profile</button>
       </div>
       <p id="profile-success-msg" class="text-green-600 text-sm hidden">Profile updated!</p>
     </form>
