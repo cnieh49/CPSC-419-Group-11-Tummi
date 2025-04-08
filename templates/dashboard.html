@@ -50,6 +50,8 @@
       <p id="user-email" class="text-gray-600"></p>
     </div>
     <div class="flex flex-wrap gap-2">
+      <button onclick="window.location.href='/profile-page'"
+        class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-sm">My Profile</button>
       <button onclick="window.location.href='/feed-page'"
         class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">Friends Feed</button>
       <button onclick="window.location.href='/explore'"
@@ -63,8 +65,7 @@
     </div>
   </div>
 
-
-  <div class="bg-white shadow p-6 rounded-md mb-6 max-w-xl mx-auto">
+  <!-- <div class="bg-white shadow p-6 rounded-md mb-6 max-w-xl mx-auto">
     <h2 class="text-xl font-semibold text-gray-800 mb-4">Your Profile</h2>
     <form id="profileForm" enctype="multipart/form-data" class="space-y-4">
       <p id="profile-success-msg"
@@ -111,7 +112,7 @@
         Update Profile
       </button>
     </form>
-  </div>
+  </div> -->
 
   <div class="max-w-xl mx-auto mb-6">
     <h3 class="text-lg font-semibold text-gray-800 mb-2">Find a Restaurant</h3>
@@ -398,49 +399,49 @@
         });
     }
 
-    document.getElementById('profileForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
+    // document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    //   e.preventDefault();
+    //   const formData = new FormData(e.target);
 
-      try {
-        const response = await fetch('/edit-profile', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formData
-        });
+    //   try {
+    //     const response = await fetch('/edit-profile', {
+    //       method: 'POST',
+    //       headers: {
+    //         'Authorization': `Bearer ${localStorage.getItem('token')}`
+    //       },
+    //       body: formData
+    //     });
 
-        if (response.ok) {
-          const successMsg = document.getElementById('profile-success-msg');
+    //     if (response.ok) {
+    //       const successMsg = document.getElementById('profile-success-msg');
 
-          successMsg.classList.remove('hidden', 'opacity-0');
-          successMsg.classList.add('opacity-100');
+    //       successMsg.classList.remove('hidden', 'opacity-0');
+    //       successMsg.classList.add('opacity-100');
 
-          setTimeout(() => {
-            successMsg.classList.add('opacity-0');
-            setTimeout(() => {
-              successMsg.classList.add('hidden');
-            }, 300);
-          }, 3000);
+    //       setTimeout(() => {
+    //         successMsg.classList.add('opacity-0');
+    //         setTimeout(() => {
+    //           successMsg.classList.add('hidden');
+    //         }, 300);
+    //       }, 3000);
 
-          fetch('/dashboard', {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          })
-            .then(res => res.json())
-            .then(data => {
-              document.getElementById('dashboard-title').textContent = data.message;
-            });
+    //       fetch('/dashboard', {
+    //         headers: {
+    //           'Authorization': `Bearer ${localStorage.getItem('token')}`
+    //         }
+    //       })
+    //         .then(res => res.json())
+    //         .then(data => {
+    //           document.getElementById('dashboard-title').textContent = data.message;
+    //         });
 
-        } else {
-          alert('Failed to update profile. Please try again.');
-        }
-      } catch (error) {
-        console.error('Error updating profile:', error);
-      }
-    });
+    //     } else {
+    //       alert('Failed to update profile. Please try again.');
+    //     }
+    //   } catch (error) {
+    //     console.error('Error updating profile:', error);
+    //   }
+    // });
 
     function showFollowers() {
       fetch('/followers', {

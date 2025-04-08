@@ -139,6 +139,11 @@ def register():
     db.session.commit()
     return jsonify({'message': 'User registered successfully'}), 201
 
+@app.route('/profile-page')
+def profile_page():
+    return render_template('profile.html')
+
+
 @app.route('/edit-profile', methods=['POST'])
 @jwt_required()
 def edit_profile():
@@ -160,6 +165,19 @@ def edit_profile():
     
     db.session.commit()
     return jsonify({'message': 'Profile updated successfully'}), 200
+
+@app.route('/get-profile')
+@jwt_required()
+def get_profile():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    return jsonify({
+        'first_name': user.first_name or '',
+        'last_name': user.last_name or '',
+        'bio': user.bio or '',
+        'location': user.location or '',
+        'profile_picture_url': user.profile_picture_url  
+    })
 
 @app.route('/add-review', methods=['POST'])
 @jwt_required()

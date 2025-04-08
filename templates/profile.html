@@ -1,233 +1,132 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Profile</title>
-  <style>
-    body { font-family: sans-serif; margin: 2rem; }
-    .review { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
-    img { max-width: 300px; margin-top: 10px; }
-    .btn {
-      padding: 5px 10px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      background-color: #f8f9fa;
-      color: #333;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    .btn:hover {
-      background-color: #e2e6ea;
-    }
-    .btn-unfollow {
-      background-color: #f8d7da;
-      border-color: #f5c6cb;
-      color: #721c24;
-    }
-    .btn-unfollow:hover {
-      background-color: #f1b0b7;
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-  <div class="profile-header">
-      {% if profile_picture %}
-      <img src="{{ profile_picture }}" class="profile-pic">
-      {% endif %}
-      <h1>{{ display_name }}</h1>
-      {% if location %}<p>📍 {{ location }}</p>{% endif %}
-      {% if bio %}<p class="bio">{{ bio }}</p>{% endif %}
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+  <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md relative">
+    <!-- Back button -->
+    <a href="/dashboard-page"
+      class="absolute top-4 left-4 text-sm bg-white border px-3 py-1 rounded hover:bg-gray-100 shadow-sm">←
+      Dashboard</a>
+
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">Your Profile</h2>
+
+    <!-- Profile display mode -->
+    <div id="profile-view" class="space-y-4">
+      <div class="text-center">
+        <img id="profile-pic" src="" alt="Profile Picture" class="w-24 h-24 mx-auto rounded-full object-cover shadow" />
+      </div>
+      <p><strong>Name:</strong> <span id="display-name" class="text-gray-700"></span></p>
+      <p><strong>Email:</strong> <span id="display-email" class="text-gray-700"></span></p>
+      <p><strong>Location:</strong> <span id="display-location" class="text-gray-700"></span></p>
+      <p><strong>Bio:</strong> <span id="display-bio" class="text-gray-700"></span></p>
+
+      <button onclick="toggleEdit(true)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">Edit
+        Profile</button>
+    </div>
+
+    <!-- Profile edit mode -->
+    <form id="profile-edit" class="space-y-4 hidden" enctype="multipart/form-data">
+      <input type="file" name="profile_picture" accept="image/*"
+        class="block w-full text-sm text-gray-600 file:px-4 file:py-2 file:rounded-md file:bg-gray-100 hover:file:bg-gray-200" />
+
+      <input type="text" name="first_name" value="{{ first_name or '' }}" placeholder="First Name" class="w-full px-4 py-2 border rounded-md" />
+      <input type="text" name="last_name" value="{{ last_name or '' }}" placeholder="Last Name" class="w-full px-4 py-2 border rounded-md" />
+      <input type="text" name="location" value="{{ location or '' }}" placeholder="Location" class="w-full px-4 py-2 border rounded-md" />
+      <textarea name="bio" placeholder="Bio" class="w-full px-4 py-2 border rounded-md"></textarea>
+
+      <div class="flex gap-4">
+        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">Save
+          Changes</button>
+        <button type="button" onclick="toggleEdit(false)"
+          class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md">Cancel</button>
+      </div>
+      <p id="profile-success-msg" class="text-green-600 text-sm hidden">Profile updated!</p>
+    </form>
   </div>
-
-  <h2>{{ user_email }}'s Reviews</h2>
-  <button onclick="window.location.href='/feed-page'" class="btn">← Back to Feed</button>
-  <div id="follow-section" style="margin-top: 10px;"></div>
-  <hr>
-  <div id="reviews">Loading reviews...</div>
-
-  <div id="modal-container"></div>
 
   <script>
     const token = localStorage.getItem('token');
-    const viewedUserId = {{ user_id | tojson }};
-    let currentUserId = null;
+    if (!token) window.location.href = '/login-page';
 
-    if (token) {
-      fetch('/me', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
-      .then(res => {
-        if (!res.ok) throw new Error("Unauthorized");
-        return res.json();
-      })
-      .then(data => {
-        currentUserId = data.id;
+    // // Load profile data
+    // fetch('/get-profile', {
+    //   headers: { Authorization: `Bearer ${token}` }
+    // })
+    //   .then(res => res.json())
+    //   .then(data => {
+    //     document.getElementById('display-name').textContent = `${data.first_name || ''} ${data.last_name || ''}`;
+    //     document.getElementById('display-email').textContent = data.email || '';
+    //     document.getElementById('display-location').textContent = data.location || '';
+    //     document.getElementById('display-bio').textContent = data.bio || '';
+    //     if (data.profile_picture_url) {
+    //       document.getElementById('profile-pic').src = data.profile_picture_url;
+    //     }
 
-        if (currentUserId === viewedUserId) {
-          window.location.href = '/dashboard-page';
-          return;
-        }
+    //     // Fill form
+    //     document.querySelector('[name="first_name"]').value = data.first_name || '';
+    //     document.querySelector('[name="last_name"]').value = data.last_name || '';
+    //     document.querySelector('[name="location"]').value = data.location || '';
+    //     document.querySelector('[name="bio"]').value = data.bio || '';
+    //   });
 
-        maybeShowFollowControls();
-      })
-      .catch(() => {
-        console.log("User not logged in");
+    // Toggle between view and edit mode
+    function toggleEdit(editing) {
+      document.getElementById('profile-view').classList.toggle('hidden', editing);
+      document.getElementById('profile-edit').classList.toggle('hidden', !editing);
+    }
+
+    // Submit profile edit form
+    document.getElementById('profile-edit').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+
+      const res = await fetch('/edit-profile', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
       });
-    }
 
-    function maybeShowFollowControls() {
-      if (currentUserId && currentUserId !== viewedUserId) {
-        fetch('/following', {
-          headers: { 'Authorization': 'Bearer ' + token }
+      if (res.ok) {
+        const successMsg = document.getElementById('profile-success-msg');
+
+        successMsg.classList.remove('hidden', 'opacity-0');
+        successMsg.classList.add('opacity-100');
+
+        setTimeout(() => {
+          successMsg.classList.add('opacity-0');
+          setTimeout(() => {
+            successMsg.classList.add('hidden');
+          }, 300);
+        }, 3000);
+
+        // Refresh display
+        fetch('/get-profile', {
+          headers: { Authorization: `Bearer ${token}` }
         })
-        .then(res => res.json())
-        .then(followingList => {
-          const isFollowing = followingList.some(u => u.id === viewedUserId);
-          const followDiv = document.getElementById('follow-section');
-          followDiv.innerHTML = `
-            <button id="follow-btn" class="btn ${isFollowing ? 'btn-unfollow' : ''}">
-              ${isFollowing ? 'Unfollow' : 'Follow'}
-            </button>
-            ${isFollowing ? '<button class="btn" onclick="showFollowers()">Followers</button> <button class="btn" onclick="showFollowing()">Following</button>' : ''}
-          `;
-          document.getElementById('follow-btn').onclick = () => {
-            const route = isFollowing ? '/unfollow/' : '/follow/';
-            fetch(`${route}${viewedUserId}`, {
-              method: 'POST',
-              headers: { 'Authorization': 'Bearer ' + token }
-            })
-            .then(res => res.json())
-            .then(data => {
-              alert(data.message);
-              location.reload();
-            });
-          };
-        });
-      }
-    }
-
-    function showFollowers() {
-      fetch(`/followers/${viewedUserId}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
-      .then(res => res.json())
-      .then(data => showListModal('Followers', data));
-    }
-
-    function showFollowing() {
-      fetch(`/following/${viewedUserId}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
-      .then(res => res.json())
-      .then(data => showListModal('Following', data));
-    }
-
-    function showListModal(title, users) {
-      const modalContainer = document.getElementById('modal-container');
-      modalContainer.innerHTML = `
-        <div class="modal-overlay" onclick="closeModal(event)" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
-          <div class="modal" onclick="event.stopPropagation()" style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;">
-            <h3>${title}</h3>
-            <ul>${users.map(u => `<li>${u.email}</li>`).join('')}</ul>
-            <button class="btn" onclick="closeModal(event)">Close</button>
-          </div>
-        </div>
-      `;
-    }
-
-    function closeModal(event) {
-      document.getElementById('modal-container').innerHTML = '';
-      if (event) event.stopPropagation();
-    }
-
-    fetch(`/user-reviews/${viewedUserId}`, {
-      headers: token ? { 'Authorization': 'Bearer ' + token } : {}
-    })
-    .then(res => res.json())
-    .then(reviews => {
-      const container = document.getElementById('reviews');
-      container.innerHTML = '';
-
-      if (reviews.length === 0) {
-        container.innerHTML = '<p>No reviews yet from this user.</p>';
-      } else {
-        reviews.forEach(r => {
-          const div = document.createElement('div');
-          div.classList.add('review');
-
-          const showEditButton = currentUserId === r.user_id;
-
-          let picturesHTML = '';
-          if (r.pictures && r.pictures.length > 0) {
-              picturesHTML = r.pictures.map(url => `<img src="${url}" style="max-width: 200px; margin: 5px;">`).join('');
-          }
-
-          div.innerHTML = `
-            <h4>${r.restaurant_name}</h4>
-            <p><strong>Location:</strong> ${r.location}</p>
-            <p>${r.notes || 'No notes'}</p>
-            <div class="pictures">${picturesHTML}</div>
-            ${showEditButton ? `
-              <button onclick="editPictures(${r.id})" class="btn">Edit Pictures</button>
-            ` : ''}
-            <p><small>Posted on ${r.timestamp}</small></p>
-            <div id="likes-${r.id}">
-              <span>❤️ <span class="like-count">0</span></span>
-              ${token ? `<button class="btn like-toggle" data-id="${r.id}">Loading...</button>` : ''}
-            </div>
-          `;
-          container.appendChild(div);
-          updateLikeCount(r.id);
-        });
-      }
-    });
-
-    function editPictures(reviewId) {
-      const newPicturesUrls = prompt("Enter new picture URLs separated by commas:");
-      if (newPicturesUrls) {
-          fetch(`/edit-review/${reviewId}`, {
-              method: 'PUT',
-              headers: {
-                  'Authorization': 'Bearer ' + token,
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ pictures: newPicturesUrls.split(",") })
-          })
           .then(res => res.json())
           .then(data => {
-              alert(data.message);
-              location.reload();
+            document.getElementById('display-name').textContent = `${data.first_name || ''} ${data.last_name || ''}`;
+            document.getElementById('display-location').textContent = data.location || '';
+            document.getElementById('display-bio').textContent = data.bio || '';
+            document.getElementById('location').value = data.location || '';
+            if (data.profile_picture_url) {
+              document.getElementById('profile-pic').src = data.profile_picture_url;
+            }
+            toggleEdit(false);
           });
+
+        // setTimeout(() => msg.classList.add('hidden'), 3000);
+      } else {
+        alert('Failed to update profile.');
       }
-    }
-
-    function updateLikeCount(reviewId) {
-      fetch(`/likes-count/${reviewId}`, {
-        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
-      })
-      .then(res => res.json())
-      .then(data => {
-        const likeSection = document.querySelector(`#likes-${reviewId}`);
-        likeSection.querySelector('.like-count').textContent = data.count;
-
-        const btn = likeSection.querySelector('.like-toggle');
-        if (btn) {
-          btn.textContent = data.liked_by_user ? 'Unlike' : 'Like';
-          btn.onclick = () => toggleLike(reviewId, data.liked_by_user);
-        }
-      });
-    }
-
-    function toggleLike(reviewId, currentlyLiked) {
-      const route = currentlyLiked ? '/unlike/' : '/like/';
-      fetch(route + reviewId, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
-      .then(() => updateLikeCount(reviewId));
-    }
+    });
   </script>
-
 </body>
+
 </html>
