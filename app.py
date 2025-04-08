@@ -372,7 +372,6 @@ def user_profile_page(user_id):
         return "User not found", 404
     
     display_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.email
-
     return render_template(
         'profile.html',
         user_id=user.id,
