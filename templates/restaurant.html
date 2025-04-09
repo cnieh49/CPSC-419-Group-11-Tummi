@@ -34,6 +34,9 @@
   <h2 id="restaurant-title">Loading Restaurant...</h2>
   <button onclick="window.location.href='/explore'" class="btn">← Back to Explore</button>
 
+  <h3>Restaurant Details</h3>
+  <div id="restaurant-details" style="margin: 1rem 0;"></div>
+
   <h3>Reviews by Your Friends</h3>
   <div id="reviews"></div>
 
@@ -45,6 +48,102 @@
 
     const restaurantName = decodeURIComponent(window.location.pathname.split('/').pop());
     document.getElementById('restaurant-title').textContent = restaurantName;
+
+    function convertTo12HourFormat(time) {
+      const hours = Math.floor(time / 100);
+      const minutes = time % 100;
+      const isPM = hours >= 12;
+      const newHours = hours % 12 || 12;
+      const newMinutes = minutes < 10 ? `0${minutes}` : minutes;
+      const period = isPM ? 'PM' : 'AM';
+      return `${newHours}:${newMinutes} ${period}`;
+    }
+
+    function whichDay(index) {
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      return days[index];
+    }
+
+    fetch(`/restaurant-details/${encodeURIComponent(restaurantName)}`, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log('hello is this working');
+      console.log('Fetched restaurant details:', data);
+      const detailsDiv = document.getElementById('restaurant-details');
+      if (!data || !data.location) {
+        detailsDiv.innerHTML = '<p>Restaurant details unavailable.</p>';
+        return;
+      }
+
+      const address = `${data.location.address1 || ''}, ${data.location.city || ''}, ${data.location.state || ''} ${data.location.zip_code || ''}`;
+      const categories = (data.categories || []).map(c => c.title).join(', ');
+      const price = data.price || 'N/A';
+      const rating = data.rating ? `${data.rating} ★` : 'No rating';
+      const phone = data.display_phone || 'N/A';
+      const image = data.image_url ? `<img src="${data.image_url}" alt="Restaurant image" style="max-width:300px; margin-top:10px;">` : '';
+
+      let hours = '';
+      let isOpenNowText = 'Not available';
+
+      if (data.business_hours && Array.isArray(data.business_hours)) {
+        const businessInfo = data.business_hours[0];
+        isOpenNowText = businessInfo.is_open_now ? 'Yes, the restaurant is currently open' : 'No, the restaurant is currently closed';
+
+        if (businessInfo.open && Array.isArray(businessInfo.open)) {
+          hours = '<h4>Business Hours:</h4><ul>';
+          // businessInfo.open.forEach(hour => {
+          //   const Day = whichDay(hour.day);
+          //   let startTime = convertTo12HourFormat(hour.start);
+          //   let endTime = convertTo12HourFormat(hour.end);
+          //   if (hour.is_overnight) {
+          //     endTime += ' (overnight)';
+          //   }
+          //   hours += `<li>${Day}: ${startTime} - ${endTime}</li>`;
+          // });
+          for (let i = 0; i < 7; i++) {
+            const Day = whichDay(i);
+            const dayHours = businessInfo.open.find(hour => hour.day === i);
+
+            if (dayHours) {
+              let startTime = convertTo12HourFormat(dayHours.start);
+              let endTime = convertTo12HourFormat(dayHours.end);
+
+              if (dayHours.is_overnight) {
+                endTime += ' (overnight)';
+              }
+
+              hours += `<li>${Day}: ${startTime} - ${endTime}</li>`;
+            } else {
+              hours += `<li>${Day}: Closed</li>`;
+            }
+          }
+          hours += '</ul>';
+        }
+        else {
+          hours = '<p>No hours given for this restaurant.</p>';
+        }
+      }
+
+      detailsDiv.innerHTML = `
+        <p><strong>Address:</strong> ${address}</p>
+        <p><strong>Cuisine:</strong> ${categories}</p>
+        <p><strong>Price:</strong> ${price}</p>
+        <p><strong>Rating:</strong> ${rating}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        ${image}
+        <p><strong></strong> ${isOpenNowText}</p>
+        ${hours}
+      `;
+    })
+    .catch(err => {
+      console.error('Error fetching restaurant details:', err);
+      document.getElementById('restaurant-details').innerHTML = '<p>Error loading restaurant details.</p>';
+    });
+
 
     fetch(`/restaurant-reviews/${encodeURIComponent(restaurantName)}`, {
       headers: {

@@ -117,7 +117,7 @@ def login():
     user = User.query.filter_by(email=data['email']).first()
 
     if user and user.check_password(data['password']):
-        token = create_access_token(identity=user.id)
+        token = create_access_token(identity=str(user.id))
         resp = jsonify({'message': 'Login successful'})
         set_access_cookies(resp, token) 
         return resp, 200
@@ -483,6 +483,43 @@ def edit_review_images(review_id):
 @app.route('/restaurant/<name>')
 def restaurant_page(name):
     return render_template('restaurant.html')
+
+# @app.route('/restaurant/<name>')
+# @jwt_required()
+# def restaurant_page(name):
+#     # Grab details from Yelp
+#     try:
+#         response = requests.get(
+#             "https://api.yelp.com/v3/businesses/search",
+#             headers={"Authorization": f"Bearer {YELP_API_KEY}"},
+#             params={"term": name, "location": "New Haven"}
+#         )
+#         data = response.json()
+#         details = data["businesses"][0] if data.get("businesses") else None
+#     except Exception as e:
+#         print("Yelp API error:", e)
+#         details = None
+
+#     return render_template("restaurant.html", name=name, details=details)
+
+@app.route('/restaurant-details/<name>')
+@jwt_required()
+def restaurant_details(name):
+    # Optional: sanitize name or match your Yelp API logic
+    try:
+        response = requests.get(
+            "https://api.yelp.com/v3/businesses/search",
+            headers={"Authorization": f"Bearer {YELP_API_KEY}"},
+            params={"term": name, "location": "New Haven"}
+        )
+        data = response.json()
+        if data["businesses"]:
+            return jsonify(data["businesses"][0])  # Return top result
+        else:
+            return jsonify({"error": "No details found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/restaurant-reviews/<restaurant_name>')
 @jwt_required()
