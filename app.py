@@ -271,6 +271,8 @@ YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'
 @app.route('/yelp-search')
 def yelp_search():
     query = request.args.get('query')
+    price_filter = request.args.getlist('price')
+    open_now_filter = request.args.get('open_now')
     headers = {
         'Authorization': f'Bearer {YELP_API_KEY}'
     }
@@ -280,6 +282,10 @@ def yelp_search():
         'limit': 10,
         'categories': 'restaurants'
     }
+    if price_filter:
+        params['price'] = ','.join(price_filter)
+    if open_now_filter == 'true':
+        params['open_now'] = 'true'
 
     res = requests.get(YELP_API_BASE, headers=headers, params=params)
     data = res.json()
@@ -484,28 +490,9 @@ def edit_review_images(review_id):
 def restaurant_page(name):
     return render_template('restaurant.html')
 
-# @app.route('/restaurant/<name>')
-# @jwt_required()
-# def restaurant_page(name):
-#     # Grab details from Yelp
-#     try:
-#         response = requests.get(
-#             "https://api.yelp.com/v3/businesses/search",
-#             headers={"Authorization": f"Bearer {YELP_API_KEY}"},
-#             params={"term": name, "location": "New Haven"}
-#         )
-#         data = response.json()
-#         details = data["businesses"][0] if data.get("businesses") else None
-#     except Exception as e:
-#         print("Yelp API error:", e)
-#         details = None
-
-#     return render_template("restaurant.html", name=name, details=details)
-
 @app.route('/restaurant-details/<name>')
 @jwt_required()
 def restaurant_details(name):
-    # Optional: sanitize name or match your Yelp API logic
     try:
         response = requests.get(
             "https://api.yelp.com/v3/businesses/search",
@@ -514,7 +501,7 @@ def restaurant_details(name):
         )
         data = response.json()
         if data["businesses"]:
-            return jsonify(data["businesses"][0])  # Return top result
+            return jsonify(data["businesses"][0])
         else:
             return jsonify({"error": "No details found"}), 404
     except Exception as e:
