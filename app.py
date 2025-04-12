@@ -236,13 +236,14 @@ def edit_review(review_id):
     user_id = get_jwt_identity()
     curr_review = Review.query.get(review_id)
 
-    if not curr_review or curr_review.user_id != user_id:
+    if not curr_review or curr_review.user_id != int(user_id):
         return jsonify({'message': 'Review not found or access denied'}), 404
     
     updated_note = request.json.get('notes', curr_review.notes)
     if updated_note:
         curr_review.notes = updated_note
         db.session.commit()
+        
         return jsonify({'message': 'Updated the selected review', 'updated_note': updated_note}), 200
     if not updated_note:
         return jsonify({'message': 'Invalid input'}), 400
@@ -257,7 +258,7 @@ def delete_review(review_id):
     user_id = get_jwt_identity()
     curr_review = Review.query.get(review_id)
 
-    if not curr_review or curr_review.user_id != user_id:
+    if not curr_review or curr_review.user_id != int(user_id):
         return jsonify({'message': 'Review not found or access denied'}), 404
     
     db.session.delete(curr_review)
