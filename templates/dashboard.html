@@ -20,6 +20,11 @@
       z-index: 999;
     }
 
+    .modal-content {
+      max-height: 80vh;
+      overflow-y: auto; 
+    }
+
     .modal {
       background: white;
       padding: 20px;
@@ -351,13 +356,15 @@
             <div class="modal" onclick="event.stopPropagation()">
               <button class="close-btn" onclick="closeModal(event)">❌</button>
               <h3>Edit Review</h3>
-              <form id="edit-review-form" enctype="multipart/form-data">
-                <textarea name="notes">${review.notes || ''}</textarea><br><br>
-                <div><p><strong>Remove images:</strong></p>${pictures.map(url => `<label><input type="checkbox" name="remove_pictures" value="${url}"> Remove image <img src="${url}" class="review-image"></label>`).join('')}</div>
-                <p>Add new pictures:</p>
-                <input type="file" name="new_pictures" multiple><br><br>
-                <button type="submit" class="btn">Save Changes</button>
-              </form>
+              <div class="modal-content">
+                <form id="edit-review-form" enctype="multipart/form-data">
+                  <textarea name="notes">${review.notes || ''}</textarea><br><br>
+                  <div><p><strong>Remove images:</strong></p>${pictures.map(url => `<label><input type="checkbox" name="remove_pictures" value="${url}"> Remove image <img src="${url}" class="review-image"></label>`).join('')}</div>
+                  <p>Add new pictures:</p>
+                  <input type="file" name="new_pictures" multiple><br><br>
+                  <button type="submit" class="btn">Save Changes</button>
+                </form>
+              </div>
             </div>
           </div>`;
 
