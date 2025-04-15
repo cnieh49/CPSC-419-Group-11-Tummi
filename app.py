@@ -245,12 +245,13 @@ def edit_review(review_id):
         db.session.commit()
         
         return jsonify({'message': 'Updated the selected review', 'updated_note': updated_note}), 200
-    if not updated_note:
-        return jsonify({'message': 'Invalid input'}), 400
+    #if not updated_note:
+    #    return jsonify({'message': 'Invalid input'}), 400
     
     new_pictures_list = request.json.get('pictures', None) 
     if new_pictures_list is not None:
         curr_review.set_pictures(new_pictures_list)
+        return jsonify({'message': 'Updated the selected review images'}), 200
 
 @app.route('/delete-review/<int:review_id>', methods=['DELETE'])
 @jwt_required()
@@ -463,7 +464,7 @@ def edit_review_images(review_id):
     user_id = get_jwt_identity()
     review = Review.query.get(review_id)
 
-    if not review or review.user_id != user_id:
+    if not review or review.user_id != int(user_id):
         return jsonify({'message': 'Review not found or access denied'}), 404
 
     # Get current pictures from review
