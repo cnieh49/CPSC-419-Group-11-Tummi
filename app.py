@@ -239,19 +239,23 @@ def edit_review(review_id):
     if not curr_review or curr_review.user_id != int(user_id):
         return jsonify({'message': 'Review not found or access denied'}), 404
     
-    updated_note = request.json.get('notes', curr_review.notes)
-    if updated_note:
-        curr_review.notes = updated_note
+    review_updated_bool = False
+    updated_information = request.json
+
+    if 'notes' in updated_information and updated_information['notes'] != curr_review.notes:
+        curr_review.notes = updated_information['notes']
+        review_updated_bool = True
+
+    if 'pictures' in updated_information:
+        if updated_information['pictures'] != curr_review.get_pictures():
+            curr_review.set_pictures(updated_information['pictures'])
+            review_updated_bool = True
+
+    if review_updated_bool:
         db.session.commit()
-        
-        return jsonify({'message': 'Updated the selected review', 'updated_note': updated_note}), 200
-    #if not updated_note:
-    #    return jsonify({'message': 'Invalid input'}), 400
-    
-    new_pictures_list = request.json.get('pictures', None) 
-    if new_pictures_list is not None:
-        curr_review.set_pictures(new_pictures_list)
-        return jsonify({'message': 'Updated the selected review images'}), 200
+        return jsonify({'message': 'Review updated successfully'}), 200
+    else:
+        return jsonify({'message': 'No changes detected'}), 200
 
 @app.route('/delete-review/<int:review_id>', methods=['DELETE'])
 @jwt_required()
