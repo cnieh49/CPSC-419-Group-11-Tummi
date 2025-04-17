@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ display_name }}'s Profile</title>
+    <style>
+        .profile-header { display: flex; align-items: center; }
+        .pic { width: 100px; height: 100px; border-radius: 50%; margin-right: 20px; }
+        .stats { margin: 10px 0; }
+        .stats span { margin-right: 20px; }
+        .reviews { margin-top: 30px; }
+        .review { border-bottom: 1px solid #ccc; padding: 10px 0; }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/user-reviews/{{ user_id }}', { credentials: 'include' })
+                .then(res => res.json())
+                .then(reviews => {
+                    const container = document.getElementById('reviews-list');
+                    if (reviews.length === 0) {
+                        container.innerHTML = "<p>No posts yet.</p>";
+                        return;
+                    }
+                    reviews.forEach(r => {
+                        const div = document.createElement('div');
+                        div.className = 'review';
+                        div.innerHTML = `
+                            <strong>${r.restaurant_name}</strong> (${r.location})<br>
+                            <small>${r.timestamp}</small><br>
+                            <p>${r.notes || ''}</p>
+                            ${r.pictures && r.pictures.length > 0 ? r.pictures.map(pic => `<img src="${pic}" style="max-width: 100px;">`).join('') : ''}
+                        `;
+                        container.appendChild(div);
+                    });
+                });
+        });
+    </script>
+</head>
+<body>
+    <div class="profile-header">
+        <img class="pic" src="{{ profile_picture }}" alt="Profile Picture">
+        <div>
+            <h2>{{ display_name }}</h2>
+            <p>{{ bio }}</p>
+            <p><small>{{ location }}</small></p>
+            <div class="stats">
+                <span><strong id="followers-count">{{ followers_count }}</strong> Followers</span>
+                <span><strong id="following-count">{{ following_count }}</strong> Following</span>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="reviews">
+        <h3>Posts by {{ display_name }}</h3>
+        <div id="reviews-list">
+        </div>
+    </div>
+</body>
+</html>

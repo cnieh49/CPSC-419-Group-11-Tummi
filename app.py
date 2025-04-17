@@ -380,8 +380,10 @@ def user_profile_page(user_id):
         return "User not found", 404
     
     display_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.email
+    is_own_profile = (str(user.id) == str(user_id))
+    
     return render_template(
-        'profile.html',
+        'indiv_profile.html',
         user_id=user.id,
         user_email=user.email,
         profile_picture=user.profile_picture,
@@ -390,6 +392,8 @@ def user_profile_page(user_id):
         last_name=user.last_name,
         bio=user.bio,
         location=user.location,
+        followers_count=len(user.followers.all()),
+        following_count=len(user.followed.all())
     )
     
 @app.route('/user-reviews/<int:user_id>')
