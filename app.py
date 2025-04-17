@@ -274,11 +274,33 @@ def delete_review(review_id):
 YELP_API_KEY = 'ummCpIkI7Wn4Rz804XeaIxsBSSNei5KFxzTl3vor1oJ2hl592M_qpKiy_bNf5eeb-hscmukmIZHWPmefXjO1W32Y_wznEL7pdfyHT9FDTYzymj2MEsQBxgUKPkPmZ3Yx'
 YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'
 
+CUISINE_TO_CATEGORY = {
+    'Italian': 'italian',
+    'Mexican': 'mexican',
+    'Chinese': 'chinese',
+    'Japanese': 'japanese',
+    'Indian': 'indpak',
+    'Thai': 'thai',
+    'Korean': 'korean',
+    'French': 'french',
+    'American': 'newamerican',
+    'Mediterranean': 'mediterranean',
+    'Vietnamese': 'vietnamese'
+}
+
 @app.route('/yelp-search')
 def yelp_search():
     query = request.args.get('query')
     price_filter = request.args.getlist('price')
     open_now_filter = request.args.get('open_now')
+    cuisine_filter = request.args.getlist('cuisine')
+    
+    categories = []
+    for cuisine in cuisine_filter:
+        category = CUISINE_TO_CATEGORY.get(cuisine)
+        if category:
+            categories.append(category)
+
     headers = {
         'Authorization': f'Bearer {YELP_API_KEY}'
     }
@@ -292,6 +314,8 @@ def yelp_search():
         params['price'] = ','.join(price_filter)
     if open_now_filter == 'true':
         params['open_now'] = 'true'
+    if categories:
+        params['categories'] = ','.join(categories)
 
     res = requests.get(YELP_API_BASE, headers=headers, params=params)
     data = res.json()
@@ -568,6 +592,13 @@ def get_following_for_user(user_id):
         return jsonify({'message': 'User not found'}), 404
     return jsonify([{'id': u.id, 'email': u.email} for u in user.followed.all()])
 
+@jwt.unauthorized_loader
+def custom_unauthorized_response(callback):
+    return redirect(url_for('login_page', next=request.path, msg='login_required'))
+
+@jwt.expired_token_loader
+def custom_expired_token_callback(jwt_header, jwt_payload):
+    return redirect(url_for('login_page', next=request.path, msg='login_required'))
 
 if __name__ == '__main__':
     app.run(debug=True)

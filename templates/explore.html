@@ -75,8 +75,41 @@
       text-decoration: none;
       display: inline-block;
     }
+
     .btn:hover {
       background-color: #e2e6ea;
+    }
+    .custom-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-btn {
+      padding: 3px 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 12px;
+      background-color: #f8f9fa;
+      cursor: pointer;
+      width: 200px;
+    }
+
+    .dropdown-btn:hover {
+      background-color: #e2e6ea;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #fff;
+      min-width: 200px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      z-index: 100;
+      padding: 10px;
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
     }
   </style>
 </head>
@@ -100,16 +133,26 @@
       </div>
     </div>
 
-    <!-- <div>
-      <label for="cuisine-filter">Cuisine Type</label>
-      <select id="cuisine-filter">
-        <option value="">All</option>
-        <option value="Italian">Italian</option>
-        <option value="Chinese">Chinese</option>
-        <option value="Mexican">Mexican</option>
-        <option value="Japanese">Japanese</option>
-      </select>
-    </div> -->
+    <div class="filter-row">
+      <label style="white-space: nowrap;">Cuisine Type</label>
+      <div class="custom-dropdown">
+        <div class="dropdown-btn" onclick="toggleDropdown()">Select Cuisine ⏷</div>
+        <div id="cuisine-dropdown" class="dropdown-content">
+          <label><input type="checkbox" value="Italian"> Italian</label><br>
+          <label><input type="checkbox" value="Chinese"> Chinese</label><br>
+          <label><input type="checkbox" value="Mexican"> Mexican</label><br>
+          <label><input type="checkbox" value="Japanese"> Japanese</label><br>
+          <label><input type="checkbox" value="Indian"> Indian</label><br>
+          <label><input type="checkbox" value="Thai"> Thai</label><br>
+          <label><input type="checkbox" value="Korean"> Korean</label><br>
+          <label><input type="checkbox" value="French"> French</label><br>
+          <label><input type="checkbox" value="American"> American</label><br>
+          <label><input type="checkbox" value="Mediterranean"> Mediterranean</label><br>
+          <label><input type="checkbox" value="Vietnamese"> Vietnamese</label><br>
+        </div>
+      </div>
+    </div>
+    
 
     <div>
       <label for="open-now-filter">Open Now</label>
@@ -128,10 +171,25 @@
       window.location.href = '/login-page';
     }
 
+    function toggleDropdown() {
+      const dropdown = document.getElementById('cuisine-dropdown');
+      dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    }
+
+    document.addEventListener('click', function(e) {
+      const dropdown = document.getElementById('cuisine-dropdown');
+      const btn = document.querySelector('.dropdown-btn');
+      if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+
     function performSearch(save = true, callback = null) {
       const query = document.getElementById('search-box').value.trim();
       const priceFilter = Array.from(document.querySelectorAll('.filter-container input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
+      const cuisineFilter = Array.from(document.querySelectorAll('#cuisine-dropdown input[type="checkbox"]:checked')).map(cb => cb.value);
       const openNowFilter = document.getElementById('open-now-filter').value;
+      
       const resultsDiv = document.getElementById('results');
       if (query.length < 3) {
         resultsDiv.innerHTML = '';
@@ -148,6 +206,10 @@
 
       priceFilter.forEach(price => {
         addtoURL += `&price=${price}`;
+      });
+
+      cuisineFilter.forEach(cuisine => {
+        addtoURL += `&categories=${encodeURIComponent(cuisine)}`;
       });
 
       if (openNowFilter === 'true') {
