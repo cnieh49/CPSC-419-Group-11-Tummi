@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <a href="{{ url_for('dashboard_page') }}">
+        &larr; Return to Dashboard
+    </a>
     <title>{{ display_name }}'s Profile</title>
     <style>
         .profile-header { display: flex; align-items: center; }
@@ -48,11 +51,54 @@
             </div>
         </div>
     </div>
+    
+    <div id="adjust-follow-status">
+        <button id="follow-status-button"></button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const followerID = {{ user_id }};
+            const follow_button = document.getElementById('follow-status-button');
+            let following = false;
+    
+            fetch(`/is-following/${followerID}`, { credentials: 'include' })
+                .then(res => res.json())
+                .then(data => {
+                    following = data.following;
+                    changeButtonText();
+                });
+    
+    
+            follow_button.onclick = function() {
+                const endpoint = following ? `/unfollow/${followerID}` : `/follow/${followerID}`;
+                fetch(endpoint, {
+                    method: 'POST',
+                    credentials: 'include'
+                })
+                .then(res => res.json())
+                .then(data => {
+                    following = !following;
+                    changeButtonText();
+
+                    const user_following_ct = document.getElementById('followers-count');
+                    if (user_following_ct) {
+                        let count = parseInt(user_following_ct.textContent, 10);
+                        user_following_ct.textContent = following ? count + 1 : count - 1;
+                    }
+                });
+            };
+
+            function changeButtonText() {
+                follow_button.textContent = following ? 'Unfollow' : 'Follow';
+            }
+        });
+    </script>
     <hr>
     <div class="reviews">
         <h3>Posts by {{ display_name }}</h3>
         <div id="reviews-list">
         </div>
     </div>
+    
 </body>
 </html>

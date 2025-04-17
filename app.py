@@ -365,6 +365,16 @@ def unfollow_user(user_id):
 
     return jsonify({'message': 'Not following this user'}), 400
 
+@app.route('/is-following/<int:user_id>')
+@jwt_required()
+def is_following(user_id):
+    current_user = User.query.get(get_jwt_identity())
+    user_friended = User.query.get(user_id)
+    if not user_friended or current_user.id == user_id:
+        return jsonify({'following': False})
+    is_following = current_user.followed.filter_by(id=user_friended.id).first() is not None
+    return jsonify({'following': is_following})
+
 @app.route('/followers')
 @jwt_required()
 def get_followers():
