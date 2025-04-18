@@ -205,8 +205,10 @@
     </div>
   ` : ''}
 
-  <p id="likes-${r.id}" class="text-sm text-gray-600 mb-2">❤️ <span class="like-count font-semibold text-red-500">0</span></p>
-
+  <p id="likes-${r.id}" class="text-sm text-gray-600 mb-2 cursor-pointer" onclick="showLikes(${r.id})">
+    ❤️ <span class="like-count font-semibold text-red-500">0</span>
+  </p>
+  
   <div class="flex gap-2">
     <button onclick="editReviewModal(${r.id})"
             class="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md">Edit</button>
@@ -479,6 +481,23 @@
           openSimpleModal("Users You Follow", content);
         });
     }
+
+    function showLikes(reviewId) {
+      fetch(`/likes/${reviewId}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(res => res.json())
+        .then(users => {
+          const content = users.length > 0
+            ? `<ul class="list-disc ml-6">${users.map(u => `<li>${u.email}</li>`).join('')}</ul>`
+            : `<p>No likes yet.</p>`;
+          openSimpleModal("Liked by", content);
+        })
+        .catch(() => {
+          alert("Unable to fetch likes.");
+        });
+    }
+    
 
     function openSimpleModal(title, bodyHtml) {
       const modalContainer = document.getElementById('modal-container');
