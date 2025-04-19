@@ -496,7 +496,7 @@ def user_profile_page(user_id):
 @app.route('/user-reviews/<int:user_id>')
 @jwt_required()
 def reviews_for_user(user_id):
-    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.sentiment.asc()).all()
     return jsonify([{
         'id': r.id,
         'restaurant_name': r.restaurant_name,
