@@ -298,6 +298,23 @@
              class="w-full px-4 py-2 border rounded-md bg-gray-100 text-sm" value="${location}" />
       <textarea name="notes" placeholder="Your notes..."
                 class="w-full border rounded-md px-4 py-2 text-sm resize-y focus:ring-2 focus:ring-green-400"></textarea>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700">How did you feel?</label>
+        <div class="flex gap-4 mt-2">
+          <label class="flex items-center">
+            <input type="radio" name="sentiment" value="I liked it!" class="mr-2" />
+            I liked it!
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="sentiment" value="I thought it was fine" class="mr-2" />
+            I thought it was fine
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="sentiment" value="I didn't like it :(" class="mr-2" />
+            I didn't like it :(
+          </label>
+        </div>
+      </div>
       <input type="file" name="pictures" multiple
              class="block w-full mt-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:bg-gray-100 hover:file:bg-gray-200" />
       <button type="submit"
@@ -310,8 +327,14 @@
 
       document.getElementById('review-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log("Form submitted");
         const form = e.target;
         const formData = new FormData(form);
+
+        const sentiment = form.querySelector('input[name="sentiment"]:checked')?.value;
+        if (sentiment) {
+          formData.append('sentiment', sentiment);
+        }
 
         const res = await fetch('/add-review', {
           method: 'POST',
@@ -361,6 +384,24 @@
               <div class="modal-content">
                 <form id="edit-review-form" enctype="multipart/form-data">
                   <textarea name="notes">${review.notes || ''}</textarea><br><br>
+                  <label for="sentiment"><strong>Sentiment:</strong></label>
+                  <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">How did you feel?</label>
+                    <div class="flex gap-4 mt-2">
+                      <label class="flex items-center">
+                        <input type="radio" name="sentiment" value="I liked it!" class="mr-2" ${review.sentiment === 'I liked it!' ? 'checked' : ''} />
+                        I liked it!
+                      </label>
+                      <label class="flex items-center">
+                        <input type="radio" name="sentiment" value="I thought it was fine" class="mr-2" ${review.sentiment === 'I thought it was fine' ? 'checked' : ''} />
+                        I thought it was fine
+                      </label>
+                      <label class="flex items-center">
+                        <input type="radio" name="sentiment" value="I didn't like it :(" class="mr-2" ${review.sentiment === "I didn't like it :(" ? 'checked' : ''} />
+                        I didn't like it :(
+                      </label>
+                    </div>
+                  </div>
                   <div><p><strong>Remove images:</strong></p>${pictures.map(url => `<label><input type="checkbox" name="remove_pictures" value="${url}"> Remove image <img src="${url}" class="review-image"></label>`).join('')}</div>
                   <p>Add new pictures:</p>
                   <input type="file" name="new_pictures" multiple><br><br>
@@ -376,6 +417,8 @@
             const formData = new FormData(form);
 
             const notes = form.notes.value.trim();
+            const sentiment = form.sentiment.value;
+
             const updateNotes = fetch(`/edit-review/${reviewId}`, {
               method: 'PUT',
               headers: {

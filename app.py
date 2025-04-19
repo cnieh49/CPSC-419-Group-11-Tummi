@@ -34,11 +34,35 @@ class Review(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+    sentiment = db.Column(db.String(255))
+    ranking = db.Column(db.Integer, nullable=True)
+
     def get_pictures(self):
         return json.loads(self.pictures or "[]")
 
     def set_pictures(self, pictures_list):
         self.pictures = json.dumps(pictures_list)
+    
+    def binary_insert_reorder(cls, reviews, new_review):
+        left, right = 0, len(reviews) - 1
+        while left <= right:
+            mid = (left + right) // 2
+            if reviews[mid].id == new_review.id:
+                return
+            elif reviews[mid].ranking < new_review.ranking:
+                left = mid + 1
+            else:
+                right = mid - 1
+        reviews.insert(left, new_review)
+        return reviews
+
+class UserSentimentCount(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sentiment = db.Column(db.String, nullable=False)
+    count = db.Column(db.Integer, default=0)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'sentiment', name='_user_sentiment_uc'),)
 
 with app.app_context():
     db.create_all()
@@ -84,6 +108,7 @@ def user_reviews():
         'restaurant_name': r.restaurant_name,
         'location': r.location,
         'notes': r.notes,
+        'sentiment': r.sentiment,
         'photo_url': r.photo_url,
         'pictures': r.pictures,
         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
@@ -200,6 +225,24 @@ def get_profile():
         #'profile_picture_url': user.profile_picture_url
     })
 
+def update_sentiment_count(user_id, sentiment, delta):
+    entry = UserSentimentCount.query.filter_by(user_id=user_id, sentiment=sentiment).first()
+    if entry:
+        entry.count += delta
+        if entry.count <= 0:
+            db.session.delete(entry)
+    elif delta > 0:
+        new_entry = UserSentimentCount(user_id=user_id, sentiment=sentiment, count=delta)
+        db.session.add(new_entry)
+
+@app.route('/sentiment-counts', methods=['GET'])
+@jwt_required()
+def get_sentiment_counts():
+    user_id = get_jwt_identity()
+    counts = UserSentimentCount.query.filter_by(user_id=user_id).all()
+    result = {c.sentiment: c.count for c in counts}
+    return jsonify(result)
+
 @app.route('/add-review', methods=['POST'])
 @jwt_required()
 def add_review():
@@ -207,6 +250,7 @@ def add_review():
     restaurant_name = request.form.get('restaurant_name')
     location = request.form.get('location')
     notes = request.form.get('notes')
+    sentiment = request.form.get('sentiment')
     
     pictures_files = request.files.getlist('pictures') 
     pictures_urls = []
@@ -221,11 +265,13 @@ def add_review():
         restaurant_name=restaurant_name,
         location=location,
         notes=notes,
+        sentiment=sentiment,
         pictures=json.dumps(pictures_urls),  
         user_id=user_id,
     )
     
     db.session.add(review)
+    update_sentiment_count(user_id, review.sentiment, +1)
     db.session.commit()
     
     return jsonify({'message': 'Review added successfully'}), 201
@@ -244,6 +290,12 @@ def edit_review(review_id):
 
     if 'notes' in updated_information and updated_information['notes'] != curr_review.notes:
         curr_review.notes = updated_information['notes']
+        review_updated_bool = True
+
+    if 'sentiment' in updated_information and updated_information['sentiment'] != curr_review.sentiment:
+        update_sentiment_count(user_id, updated_information['sentiment'], +1)
+        update_sentiment_count(user_id, curr_review.sentiment, -1)
+        curr_review.sentiment = updated_information['sentiment']
         review_updated_bool = True
 
     if 'pictures' in updated_information:
@@ -267,6 +319,7 @@ def delete_review(review_id):
         return jsonify({'message': 'Review not found or access denied'}), 404
     
     db.session.delete(curr_review)
+    update_sentiment_count(user_id, curr_review.sentiment, -1)
     db.session.commit()
 
     return jsonify({'message': 'Deleted the selected review'}), 200
@@ -346,6 +399,7 @@ def feed():
             'restaurant_name': r.restaurant_name,
             'location': r.location,
             'notes': r.notes,
+            'sentiment': r.sentiment,
             'photo_url': r.photo_url,
             'pictures': r.pictures,
             'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
@@ -443,6 +497,7 @@ def reviews_for_user(user_id):
         'restaurant_name': r.restaurant_name,
         'location': r.location,
         'notes': r.notes,
+        'sentiment': r.sentiment,
         'photo_url': r.photo_url,
         'pictures': r.get_pictures(),
         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
@@ -565,6 +620,7 @@ def restaurant_reviews(restaurant_name):
         'restaurant_name': r.restaurant_name,
         'location': r.location,
         'notes': r.notes,
+        'sentiment': r.sentiment,
         'pictures': r.pictures,
         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
         'user_id': r.user_id,
