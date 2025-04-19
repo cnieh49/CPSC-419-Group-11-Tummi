@@ -45,6 +45,39 @@
       cursor: pointer;
     }
   </style>
+  <style>
+    .review-list {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0;
+      list-style: none;
+    }
+    .review-card {
+      border: 1px solid #eee;
+      border-radius: 5px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      background: #fafbfc;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .review-card .review-title {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 4px;
+    }
+    .review-card .review-meta {
+      color: #888;
+      font-size: 0.95em;
+      margin-bottom: 7px;
+    }
+    .review-card .review-notes {
+      margin-bottom: 5px;
+    }
+    .review-card .review-sentiment {
+      font-size: 0.95em;
+      color: #3a7d3a;
+    }
+    </style>
 </head>
 
 <body>
@@ -59,6 +92,8 @@
         class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-sm">My Profile</button>
       <button onclick="window.location.href='/feed-page'"
         class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">Friends Feed</button>
+      <button onclick="window.location.href='/compare-reviews'"
+        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm">Compare Reviews</button>
       <button onclick="window.location.href='/explore'"
         class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md text-sm">Explore</button>
       <button onclick="showFollowers()"
@@ -129,6 +164,7 @@
 
   <div id="review-list" class="max-w-3xl mx-auto mt-8"></div>
   <div id="modal-container"></div>
+
 
   <script>
     fetch('/dashboard-page', {

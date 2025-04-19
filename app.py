@@ -309,6 +309,11 @@ def edit_review(review_id):
     else:
         return jsonify({'message': 'No changes detected'}), 200
 
+@app.route('/compare-reviews')
+@jwt_required()
+def compare_reviews_page():
+    return render_template('compare_review.html')
+
 @app.route('/delete-review/<int:review_id>', methods=['DELETE'])
 @jwt_required()
 def delete_review(review_id):
