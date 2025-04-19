@@ -125,7 +125,7 @@
   <div class="filter-container">
     <div>
       <label>Price Range</label>
-      <div>
+      <div id="price-checkboxes">
         <label><input type="checkbox" value="1" id="price-1"> $</label>
         <label><input type="checkbox" value="2" id="price-2"> $$</label>
         <label><input type="checkbox" value="3" id="price-3"> $$$</label>
@@ -186,7 +186,7 @@
 
     function performSearch(save = true, callback = null) {
       const query = document.getElementById('search-box').value.trim();
-      const priceFilter = Array.from(document.querySelectorAll('.filter-container input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
+      const priceFilter = Array.from(document.querySelectorAll('#price-checkboxes input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
       const cuisineFilter = Array.from(document.querySelectorAll('#cuisine-dropdown input[type="checkbox"]:checked')).map(cb => cb.value);
       const openNowFilter = document.getElementById('open-now-filter').value;
       
@@ -204,19 +204,23 @@
 
       addtoURL = '';
 
+      // console.log("price filter", `${priceFilter}`);
       priceFilter.forEach(price => {
         addtoURL += `&price=${price}`;
       });
 
+      // cTest = '';
       cuisineFilter.forEach(cuisine => {
+        // cTest += `&categories=${encodeURIComponent(cuisine)}`
         addtoURL += `&categories=${encodeURIComponent(cuisine)}`;
       });
+      // console.log("ctest", `${cTest}`);
 
       if (openNowFilter === 'true') {
         addtoURL += `&open_now=true`;
       }
 
-      // console.log("url", `/yelp-search?query=${encodeURIComponent(query)}${addtoURL}`);
+      console.log("url", `/yelp-search?query=${encodeURIComponent(query)}${addtoURL}`);
 
       fetch(`/yelp-search?query=${encodeURIComponent(query)}${addtoURL}`, {
         headers: { 'Authorization': 'Bearer ' + token }

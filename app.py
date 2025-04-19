@@ -293,8 +293,8 @@ def yelp_search():
     query = request.args.get('query')
     price_filter = request.args.getlist('price')
     open_now_filter = request.args.get('open_now')
-    cuisine_filter = request.args.getlist('cuisine')
-    
+    cuisine_filter = request.args.getlist('categories')
+
     categories = []
     for cuisine in cuisine_filter:
         category = CUISINE_TO_CATEGORY.get(cuisine)
