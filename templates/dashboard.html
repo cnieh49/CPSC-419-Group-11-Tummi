@@ -461,7 +461,7 @@
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token
               },
-              body: JSON.stringify({ notes })
+              body: JSON.stringify({ notes, sentiment })
             });
 
             const updateImages = fetch(`/edit-review-images/${reviewId}`, {
@@ -479,6 +479,7 @@
                   alert('Review updated successfully');
                   closeModal();
                   loadReviews();
+
                 } else {
                   alert(noteData.message || imgData.message || 'Update failed.');
                 }
