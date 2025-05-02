@@ -430,7 +430,7 @@ def feed():
     user = User.query.get(get_jwt_identity())
     followed_ids = [u.id for u in user.followed.all()]
 
-    reviews = Review.query.filter(Review.user_id.in_(followed_ids)).order_by(Review.ranking.desc()).all()
+    reviews = Review.query.filter(Review.user_id.in_(followed_ids)).order_by(Review.timestamp.desc()).all()
 
     return jsonify([
         {
