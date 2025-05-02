@@ -17,24 +17,28 @@
 </head>
 
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-    <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">Register</h2>
-
-    <form id="register-form" class="space-y-4">
+  <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md text-center">
+    <img src="{{ url_for('static', filename='images/tummi-logo.png') }}" alt="Tummi logo" class="h-14 mx-auto mb-4">
+    
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6">Register</h2>
+  
+    <form id="register-form" class="space-y-4 text-left">
       <input type="email" id="email" placeholder="Email" required
         class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
-
+  
       <input type="password" id="password" placeholder="Password" required
         class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
-
+  
       <button type="submit"
         class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">Register</button>
     </form>
-
+  
     <p id="message" class="text-center mt-4 font-medium"></p>
-
-    <p class="text-sm text-center text-gray-600 mt-4">Already have an account? <a href="/login-page">Log in here</a></p>
+  
+    <p class="text-sm text-center text-gray-600 mt-4">Already have an account? <a href="/login-page"
+        class="text-green-600 underline">Log in here</a></p>
   </div>
+
 
   <script>
     const form = document.getElementById('register-form');
