@@ -84,7 +84,8 @@
   <div
     class="bg-white shadow-md p-6 rounded-md mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-      <h2 class="text-2xl font-semibold text-gray-800" id="dashboard-title">Loading your dashboard...</h2>
+      <!-- <h2 class="text-2xl font-semibold text-gray-800" id="dashboard-title">Loading your dashboard...</h2> -->
+      <img src="{{ url_for('static', filename='images/tummi-logo.png') }}" alt="Tummi logo" class="h-20">
       <p id="user-email" class="text-gray-600"></p>
     </div>
     <div class="flex flex-wrap gap-2">
@@ -188,8 +189,8 @@
       .then(res => res.json())
       .then(data => {
         // document.querySelector('h2').textContent = data.message;
-        document.querySelector('#dashboard-title').textContent = data.message;
-        document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
+        // document.querySelector('#dashboard-title').textContent = data.message;
+        // document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
         loadReviews();
       })
       .catch(() => {
