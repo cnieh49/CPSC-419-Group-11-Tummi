@@ -10,8 +10,7 @@
 <body class="bg-gray-100 min-h-screen py-10 px-4">
   <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md relative">
     <!-- Back button -->
-    <a href="/dashboard-page"
-      class="text-sm bg-gray-100 border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">←
+    <a href="/dashboard-page" class="text-sm bg-gray-100 border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">←
       Dashboard</a>
 
     <!-- Logo -->
@@ -23,14 +22,10 @@
 
     <!-- Profile display mode -->
     <div id="profile-view" class="space-y-4 text-gray-700">
-      {% if profile_picture %}
       <div class="w-32 h-32 mb-2 mx-auto">
-        <img src="{{ profile_picture }}" alt="Current Profile Picture"
-             class="w-full h-full object-cover rounded-full border border-gray-300">
-      </div>      
-      {% else %}
-      <p>No profile picture uploaded.</p>
-      {% endif %}
+        <img src="{{ profile_picture or url_for('static', filename='images/default-avatar.png') }}"
+          alt="Profile Picture" class="w-28 h-28 object-cover rounded-full border border-gray-300" />
+      </div>
 
       <p><strong>First Name:</strong> {{ first_name }}</p>
       <p><strong>Last Name:</strong> {{ last_name }}</p>

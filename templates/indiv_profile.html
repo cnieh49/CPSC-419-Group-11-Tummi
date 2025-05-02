@@ -1,104 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <a href="{{ url_for('dashboard_page') }}">
-        &larr; Return to Dashboard
-    </a>
+    <meta charset="UTF-8">
     <title>{{ display_name }}'s Profile</title>
-    <style>
-        .profile-header { display: flex; align-items: center; }
-        .pic { width: 100px; height: 100px; border-radius: 50%; margin-right: 20px; }
-        .stats { margin: 10px 0; }
-        .stats span { margin-right: 20px; }
-        .reviews { margin-top: 30px; }
-        .review { border-bottom: 1px solid #ccc; padding: 10px 0; }
-    </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            fetch('/user-reviews/{{ user_id }}', { credentials: 'include' })
-                .then(res => res.json())
-                .then(reviews => {
-                    const container = document.getElementById('reviews-list');
-                    if (reviews.length === 0) {
-                        container.innerHTML = "<p>No posts yet.</p>";
-                        return;
-                    }
-                    reviews.forEach(r => {
-                        const div = document.createElement('div');
-                        div.className = 'review';
-                        div.innerHTML = `
-                            <strong>${r.restaurant_name}</strong> (${r.location})<br>
-                            <small>${r.timestamp}</small><br>
-                            <p>${r.notes || ''}</p>
-                            ${r.pictures && r.pictures.length > 0 ? r.pictures.map(pic => `<img src="${pic}" style="max-width: 100px;">`).join('') : ''}
-                        `;
-                        container.appendChild(div);
-                    });
-                });
-        });
-    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div class="profile-header">
-        <img class="pic" src="{{ profile_picture }}" alt="Profile Picture">
-        <div>
-            <h2>{{ display_name }}</h2>
-            <p>{{ bio }}</p>
-            <p><small>{{ location }}</small></p>
-            <div class="stats">
-                <span><strong id="followers-count">{{ followers_count }}</strong> Followers</span>
-                <span><strong id="following-count">{{ following_count }}</strong> Following</span>
+
+<body class="bg-gray-50 text-gray-800 p-6">
+    <div class="max-w-3xl mx-auto space-y-8">
+        <!-- Back to Dashboard -->
+        <a href="{{ url_for('feed_page') }}"
+            class="inline-block text-sm bg-white border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">
+            ← Back to Friend Feeds
+        </a>
+
+        <!-- Profile Header -->
+        <div class="flex items-center gap-6 bg-white p-6 rounded-lg shadow-md">
+            <img src="{{ profile_picture or url_for('static', filename='images/default-avatar.png') }}"
+                alt="Profile Picture" class="w-28 h-28 object-cover rounded-full border border-gray-300" />
+            <div>
+                <h2 class="text-2xl font-semibold">{{ display_name }}</h2>
+                <p class="text-gray-600">{{ bio or '' }}</p>
+                <p class="text-sm text-gray-500">{{ location or '' }}</p>
+                <div class="flex gap-6 mt-2 text-sm">
+                    <span><strong id="followers-count">{{ followers_count }}</strong> Followers</span>
+                    <span><strong id="following-count">{{ following_count }}</strong> Following</span>
+                </div>
+            </div>
+            <button id="follow-status-button"
+                class="ml-auto px-5 py-2 text-sm rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium shadow"></button>
+        </div>
+
+        <!-- Reviews -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-4">Posts by {{ display_name }}</h3>
+            <div id="reviews-list" class="space-y-6 text-sm text-gray-700">
+                <p>Loading posts...</p>
             </div>
         </div>
     </div>
-    
-    <div id="adjust-follow-status">
-        <button id="follow-status-button"></button>
-    </div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const followerID = {{ user_id }};
-            const follow_button = document.getElementById('follow-status-button');
-            let following = false;
-    
-            fetch(`/is-following/${followerID}`, { credentials: 'include' })
-                .then(res => res.json())
-                .then(data => {
-                    following = data.following;
-                    changeButtonText();
-                });
-    
-    
-            follow_button.onclick = function() {
-                const endpoint = following ? `/unfollow/${followerID}` : `/follow/${followerID}`;
-                fetch(endpoint, {
-                    method: 'POST',
-                    credentials: 'include'
-                })
+        const followerID = parseInt("{{ user_id }}");
+        let following = false;
+        const followBtn = document.getElementById('follow-status-button');
+        const token = localStorage.getItem('token');
+
+        // Update follow button
+        function updateFollowButton() {
+            followBtn.textContent = following ? 'Unfollow' : 'Follow';
+        }
+
+        fetch(`/is-following/${followerID}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+            .then(res => res.json())
+            .then(data => {
+                following = data.following;
+                updateFollowButton();
+            });
+
+        // Handle follow/unfollow
+        followBtn.onclick = function () {
+            const endpoint = following ? `/unfollow/${followerID}` : `/follow/${followerID}`;
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
                 .then(res => res.json())
                 .then(data => {
                     following = !following;
-                    changeButtonText();
+                    updateFollowButton();
 
-                    const user_following_ct = document.getElementById('followers-count');
-                    if (user_following_ct) {
-                        let count = parseInt(user_following_ct.textContent, 10);
-                        user_following_ct.textContent = following ? count + 1 : count - 1;
-                    }
+                    const countEl = document.getElementById('followers-count');
+                    let count = parseInt(countEl.textContent);
+                    countEl.textContent = following ? count + 1 : count - 1;
                 });
-            };
+        };
 
-            function changeButtonText() {
-                follow_button.textContent = following ? 'Unfollow' : 'Follow';
-            }
-        });
+        // Load user reviews
+        fetch(`/user-reviews/${followerID}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to fetch posts');
+                return res.json();
+            })
+            .then(reviews => {
+                const container = document.getElementById('reviews-list');
+                container.innerHTML = '';
+
+                if (!reviews.length) {
+                    container.innerHTML = '<p class="text-gray-500 italic">No posts yet.</p>';
+                    return;
+                }
+
+                reviews.forEach(r => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-white p-5 rounded-xl shadow-md space-y-3';
+
+                    const pictures = Array.isArray(r.pictures) ? r.pictures : [];
+                    const imagesHTML = pictures.map(url => `
+                    <img src="${url}" alt="Review Image"
+                        class="w-40 h-40 object-cover rounded-md border border-gray-200 shadow-sm" />
+                `).join('');
+
+                    div.className = 'border-b pb-4';
+                    div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                    <h4 class="text-lg font-semibold text-gray-900">${r.restaurant_name}</h4>
+                    <span class="text-xs text-gray-500 mt-1">${r.timestamp}</span>
+                    </div>
+                    <p class="text-sm text-gray-600"><strong>Location:</strong> ${r.location}</p>
+                    <p class="text-sm text-gray-800">${r.notes ? r.notes : '<em class="text-gray-400">No notes provided.</em>'}</p>
+                    ${imagesHTML ? `<div class="flex flex-wrap gap-3 pt-2">${imagesHTML}</div>` : ''}
+                `;
+                    container.appendChild(div);
+                });
+            })
+            .catch(err => {
+                const container = document.getElementById('reviews-list');
+                container.innerHTML = `<p class="text-red-600">Error loading posts.</p>`;
+                console.error(err);
+            });
     </script>
-    <hr>
-    <div class="reviews">
-        <h3>Posts by {{ display_name }}</h3>
-        <div id="reviews-list">
-        </div>
-    </div>
-    
 </body>
+
 </html>

@@ -515,20 +515,19 @@ def user_profile_page(user_id):
         following_count=len(user.followed.all())
     )
     
-# @app.route('/user-reviews/<int:user_id>')
-# @jwt_required()
-# def reviews_for_user(user_id):
-#     reviews = Review.query.filter_by(user_id=user_id).order_by(Review.sentiment.asc()).all()
-#     return jsonify([{
-#         'id': r.id,
-#         'restaurant_name': r.restaurant_name,
-#         'location': r.location,
-#         'notes': r.notes,
-#         'sentiment': r.sentiment,
-#         'photo_url': r.photo_url,
-#         'pictures': r.get_pictures(),
-#         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-#     } for r in reviews])
+@app.route('/user-reviews/<int:user_id>')
+@jwt_required()
+def reviews_for_user(user_id):
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
+    return jsonify([{
+        'id': r.id,
+        'restaurant_name': r.restaurant_name,
+        'location': r.location,
+        'notes': r.notes,
+        'photo_url': r.photo_url,
+        'pictures': r.get_pictures(),
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    } for r in reviews])
     
 @app.route('/like/<int:review_id>', methods=['POST'])
 @jwt_required()

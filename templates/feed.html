@@ -10,9 +10,8 @@
 <body class="bg-gray-100 min-h-screen py-10 px-4 text-gray-800">
   <div class="max-w-4xl mx-auto space-y-8">
 
-    <a href="/dashboard-page"
-    class="text-sm bg-white border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">←
-    Dashboard</a>
+    <a href="/dashboard-page" class="text-sm bg-white border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">←
+      Dashboard</a>
     <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Friend Feeds</h2>
     <!-- <div class="flex items-center justify-between">
       <button onclick="window.location.href='/dashboard-page'"
@@ -69,7 +68,7 @@
               const li = document.createElement('li');
               li.innerHTML = `
               <a href="/user/${user.id}">${user.email}</a>
-              <button onclick="unfollowUser(${user.id})" class="btn btn-unfollow">Unfollow</button>
+              <button onclick="unfollowUser(${user.id})" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md text-sm">Unfollow</button>
             `;
               list.appendChild(li);
             });
@@ -165,22 +164,33 @@
               try {
                 const pictures = JSON.parse(r.pictures || "[]");
                 pictures.forEach(url => {
-                  picturesHTML += `<img src="${url}" style="max-width: 200px; margin: 5px;">`;
+                  picturesHTML += `<img src="${url}" class="rounded-md border shadow-sm w-64 h-auto object-cover">`;
                 });
               } catch (e) {
                 console.error('Error parsing pictures:', e);
               }
 
+              div.className = "border border-gray-200 p-4 rounded-lg shadow-sm bg-white space-y-2";
+
               div.innerHTML = `
-              <p><strong><a href="/user/${r.user_id}">${r.email}</a></strong> reviewed:</p>
-              <h4>${r.restaurant_name}</h4>
-              <p><strong>Location:</strong> ${r.location}</p>
-              <p>${r.notes || 'No notes'}</p>
-              <div class="pictures">${picturesHTML}</div>
-              <p><small>Posted on ${r.timestamp}</small></p>
-              <div id="likes-${r.id}">
-                <span>❤️ <span class="like-count">0</span></span>
-                <button class="btn like-toggle" data-id="${r.id}">Loading...</button>
+              <p class="text-sm text-gray-600">
+                <strong><a href="/user/${r.user_id}" class="text-blue-600 hover:underline">${r.email}</a></strong> reviewed:
+              </p>
+              <h4 class="text-lg font-semibold text-gray-800">${r.restaurant_name}</h4>
+              <p class="text-sm"><strong>Location:</strong> ${r.location}</p>
+              <p class="text-sm text-gray-700">${r.notes || 'No notes'}</p>
+
+              <div class="flex flex-wrap gap-2">
+                ${picturesHTML}
+              </div>
+
+              <p class="text-xs text-gray-500">Posted on ${r.timestamp}</p>
+
+              <div id="likes-${r.id}" class="flex items-center gap-3">
+                <span class="text-red-500 text-xl">❤️ <span class="like-count font-medium">0</span></span>
+                <button class="like-toggle bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded-md shadow-sm transition-all" data-id="${r.id}">
+                  Loading...
+                </button>
               </div>
             `;
               container.appendChild(div);
