@@ -10,8 +10,7 @@
 <body class="bg-gray-100 min-h-screen py-10 px-4">
   <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md relative">
     <!-- Back button -->
-    <a href="/dashboard-page"
-      class="text-sm bg-gray-100 border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">←
+    <a href="/dashboard-page" class="text-sm bg-gray-100 border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">←
       Dashboard</a>
 
     <!-- Logo -->
@@ -23,11 +22,10 @@
 
     <!-- Profile display mode -->
     <div id="profile-view" class="space-y-4 text-gray-700">
-      {% if profile_picture %}
-      <img src="{{ profile_picture }}" alt="Profile Picture" class="w-32 h-32 object-cover rounded-full mx-auto border border-gray-300">
-      {% else %}
-      <p>No profile picture uploaded.</p>
-      {% endif %}
+      <div class="w-32 h-32 mb-2 mx-auto">
+        <img src="{{ profile_picture or url_for('static', filename='images/default-avatar.png') }}"
+          alt="Profile Picture" class="w-28 h-28 object-cover rounded-full border border-gray-300" />
+      </div>
 
       <p><strong>First Name:</strong> {{ first_name }}</p>
       <p><strong>Last Name:</strong> {{ last_name }}</p>
@@ -74,27 +72,6 @@
   <script>
     const token = localStorage.getItem('token');
     if (!token) window.location.href = '/login-page';
-
-    // // Load profile data
-    // fetch('/get-profile', {
-    //   headers: { Authorization: `Bearer ${token}` }
-    // })
-    //   .then(res => res.json())
-    //   .then(data => {
-    //     document.getElementById('display-name').textContent = `${data.first_name || ''} ${data.last_name || ''}`;
-    //     document.getElementById('display-email').textContent = data.email || '';
-    //     document.getElementById('display-location').textContent = data.location || '';
-    //     document.getElementById('display-bio').textContent = data.bio || '';
-    //     if (data.profile_picture_url) {
-    //       document.getElementById('profile-pic').src = data.profile_picture_url;
-    //     }
-
-    //     // Fill form
-    //     document.querySelector('[name="first_name"]').value = data.first_name || '';
-    //     document.querySelector('[name="last_name"]').value = data.last_name || '';
-    //     document.querySelector('[name="location"]').value = data.location || '';
-    //     document.querySelector('[name="bio"]').value = data.bio || '';
-    //   });
 
     // Toggle between view and edit mode
     function toggleEdit(editing) {

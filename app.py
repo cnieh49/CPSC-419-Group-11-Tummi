@@ -5,10 +5,15 @@ from flask_jwt_extended.exceptions import NoAuthorizationError
 from models import db, User, Like
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from dotenv import load_dotenv
+from PIL import Image
+from io import BytesIO
 import os
 import json
 import requests
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -190,6 +195,15 @@ def profile_page():
     
     return response
 
+def crop_center_square(image):
+    width, height = image.size
+    min_dim = min(width, height)
+    left = (width - min_dim) // 2
+    top = (height - min_dim) // 2
+    right = (width + min_dim) // 2
+    bottom = (height + min_dim) // 2
+    return image.crop((left, top, right, bottom))
+
 @app.route('/edit-profile', methods=['POST'])
 @jwt_required()
 def edit_profile():
@@ -200,8 +214,17 @@ def edit_profile():
         photo = request.files['profile_picture']
         if photo:
             filename = secure_filename(photo.filename)
-            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            photo.save(photo_path)
+            image = Image.open(photo.stream)
+            image = crop_center_square(image)
+
+            output = BytesIO()
+            image.save(output, format='JPEG')
+            output.seek(0)
+
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            with open(file_path, 'wb') as f:
+                f.write(output.read())
+
             user.profile_picture = url_for('uploaded_file', filename=filename, _external=True)
     
     user.first_name = request.form.get('first_name', user.first_name)
@@ -223,7 +246,6 @@ def get_profile():
         'bio': user.bio or '',
         'location': user.location or '',
         'profile_picture': user.profile_picture or ''
-        #'profile_picture_url': user.profile_picture_url
     })
 
 def update_sentiment_count(user_id, sentiment, delta):
@@ -330,7 +352,8 @@ def delete_review(review_id):
 
     return jsonify({'message': 'Deleted the selected review'}), 200
 
-YELP_API_KEY = 'w4R9lrpiNFCv82-lbRluyeo9q3mOaXgw3XvfihkU8Cgl4rogusg99uDGZEA09XR0jnpJzfIp_gdljPfYHKTjGmKMgAwhddmigimcqpAGfJkjOvm4lxLdZVfxI0cUaHYx'
+# YELP_API_KEY = 'w4R9lrpiNFCv82-lbRluyeo9q3mOaXgw3XvfihkU8Cgl4rogusg99uDGZEA09XR0jnpJzfIp_gdljPfYHKTjGmKMgAwhddmigimcqpAGfJkjOvm4lxLdZVfxI0cUaHYx'
+YELP_API_KEY = os.getenv("YELP_API_KEY")
 YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'
 
 CUISINE_TO_CATEGORY = {
@@ -360,9 +383,7 @@ def yelp_search():
         if category:
             categories.append(category)
 
-    headers = {
-        'Authorization': f'Bearer {YELP_API_KEY}'
-    }
+    headers = {"Authorization": f"Bearer {YELP_API_KEY}"}
     params = {
         'term': query,
         'location': 'New York, NY',  # Or use user-provided location
@@ -494,20 +515,19 @@ def user_profile_page(user_id):
         following_count=len(user.followed.all())
     )
     
-# @app.route('/user-reviews/<int:user_id>')
-# @jwt_required()
-# def reviews_for_user(user_id):
-#     reviews = Review.query.filter_by(user_id=user_id).order_by(Review.sentiment.asc()).all()
-#     return jsonify([{
-#         'id': r.id,
-#         'restaurant_name': r.restaurant_name,
-#         'location': r.location,
-#         'notes': r.notes,
-#         'sentiment': r.sentiment,
-#         'photo_url': r.photo_url,
-#         'pictures': r.get_pictures(),
-#         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-#     } for r in reviews])
+@app.route('/user-reviews/<int:user_id>')
+@jwt_required()
+def reviews_for_user(user_id):
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
+    return jsonify([{
+        'id': r.id,
+        'restaurant_name': r.restaurant_name,
+        'location': r.location,
+        'notes': r.notes,
+        'photo_url': r.photo_url,
+        'pictures': r.get_pictures(),
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    } for r in reviews])
     
 @app.route('/like/<int:review_id>', methods=['POST'])
 @jwt_required()
