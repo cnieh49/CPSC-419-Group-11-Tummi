@@ -5,10 +5,13 @@ from flask_jwt_extended.exceptions import NoAuthorizationError
 from models import db, User, Like
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from dotenv import load_dotenv
 import os
 import json
 import requests
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
@@ -330,7 +333,8 @@ def delete_review(review_id):
 
     return jsonify({'message': 'Deleted the selected review'}), 200
 
-YELP_API_KEY = 'w4R9lrpiNFCv82-lbRluyeo9q3mOaXgw3XvfihkU8Cgl4rogusg99uDGZEA09XR0jnpJzfIp_gdljPfYHKTjGmKMgAwhddmigimcqpAGfJkjOvm4lxLdZVfxI0cUaHYx'
+# YELP_API_KEY = 'w4R9lrpiNFCv82-lbRluyeo9q3mOaXgw3XvfihkU8Cgl4rogusg99uDGZEA09XR0jnpJzfIp_gdljPfYHKTjGmKMgAwhddmigimcqpAGfJkjOvm4lxLdZVfxI0cUaHYx'
+YELP_API_KEY = os.getenv("YELP_API_KEY")
 YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'
 
 CUISINE_TO_CATEGORY = {
@@ -360,9 +364,7 @@ def yelp_search():
         if category:
             categories.append(category)
 
-    headers = {
-        'Authorization': f'Bearer {YELP_API_KEY}'
-    }
+    headers = {"Authorization": f"Bearer {YELP_API_KEY}"}
     params = {
         'term': query,
         'location': 'New York, NY',  # Or use user-provided location
