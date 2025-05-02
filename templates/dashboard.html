@@ -193,6 +193,9 @@
     })
       .then(res => res.json())
       .then(data => {
+        // document.querySelector('h2').textContent = data.message;
+        document.querySelector('#dashboard-title').textContent = data.message;
+        document.getElementById('user-email').textContent = 'Logged in as: ' + data.email;
         loadReviews();
       })
       .catch(() => {
