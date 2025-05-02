@@ -24,7 +24,10 @@
     <!-- Profile display mode -->
     <div id="profile-view" class="space-y-4 text-gray-700">
       {% if profile_picture %}
-      <img src="{{ profile_picture }}" alt="Profile Picture" class="w-32 h-32 object-cover rounded-full mx-auto border border-gray-300">
+      <div class="w-32 h-32 mb-2 mx-auto">
+        <img src="{{ profile_picture }}" alt="Current Profile Picture"
+             class="w-full h-full object-cover rounded-full border border-gray-300">
+      </div>      
       {% else %}
       <p>No profile picture uploaded.</p>
       {% endif %}
@@ -74,27 +77,6 @@
   <script>
     const token = localStorage.getItem('token');
     if (!token) window.location.href = '/login-page';
-
-    // // Load profile data
-    // fetch('/get-profile', {
-    //   headers: { Authorization: `Bearer ${token}` }
-    // })
-    //   .then(res => res.json())
-    //   .then(data => {
-    //     document.getElementById('display-name').textContent = `${data.first_name || ''} ${data.last_name || ''}`;
-    //     document.getElementById('display-email').textContent = data.email || '';
-    //     document.getElementById('display-location').textContent = data.location || '';
-    //     document.getElementById('display-bio').textContent = data.bio || '';
-    //     if (data.profile_picture_url) {
-    //       document.getElementById('profile-pic').src = data.profile_picture_url;
-    //     }
-
-    //     // Fill form
-    //     document.querySelector('[name="first_name"]').value = data.first_name || '';
-    //     document.querySelector('[name="last_name"]').value = data.last_name || '';
-    //     document.querySelector('[name="location"]').value = data.location || '';
-    //     document.querySelector('[name="bio"]').value = data.bio || '';
-    //   });
 
     // Toggle between view and edit mode
     function toggleEdit(editing) {
