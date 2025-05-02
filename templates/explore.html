@@ -33,40 +33,71 @@
 
     <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
       <div class="flex flex-wrap gap-6 items-start">
-        <div>
+        <div class="relative">
           <label class="font-medium block mb-1">Price Range</label>
-          <div id="price-checkboxes" class="space-x-2">
-            <label><input type="checkbox" value="1" id="price-1"> $</label>
-            <label><input type="checkbox" value="2" id="price-2"> $$</label>
-            <label><input type="checkbox" value="3" id="price-3"> $$$</label>
-            <label><input type="checkbox" value="4" id="price-4"> $$$$</label>
+          <div class="dropdown-btn bg-white px-4 py-2 border rounded cursor-pointer w-48 flex justify-between items-center" data-dropdown-id="price-dropdown" onclick="handleDropdownClick(event)">
+            <span>Select Price</span>
+            <svg class="w-4 h-4 text-gray-500 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          <div id="price-dropdown"
+            class="dropdown-content absolute bg-white border rounded shadow-lg mt-1 p-3 max-h-48 overflow-y-auto z-10 hidden w-48 space-y-1 text-sm">
+            <label class="block"><input type="checkbox" value="1"> $</label>
+            <label class="block"><input type="checkbox" value="2"> $$</label>
+            <label class="block"><input type="checkbox" value="3"> $$$</label>
+            <label class="block"><input type="checkbox" value="4"> $$$$</label>
           </div>
         </div>
         <div class="relative">
           <label class="font-medium block mb-1">Cuisine Type</label>
-          <div class="dropdown-btn bg-white px-4 py-2 border rounded cursor-pointer w-48" onclick="toggleDropdown()">
-            Select Cuisine ⏷</div>
+          <div class="dropdown-btn bg-white px-4 py-2 border rounded cursor-pointer w-48 flex justify-between items-center" data-dropdown-id="cuisine-dropdown" onclick="handleDropdownClick(event)">
+            <span>Select Cuisine</span>
+            <svg class="w-4 h-4 text-gray-500 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
           <div id="cuisine-dropdown"
             class="dropdown-content absolute bg-white border rounded shadow-lg mt-1 p-3 max-h-48 overflow-y-auto z-10 hidden w-48 space-y-1 text-sm">
-            <label><input type="checkbox" value="Italian"> Italian</label>
-            <label><input type="checkbox" value="Chinese"> Chinese</label>
-            <label><input type="checkbox" value="Mexican"> Mexican</label>
-            <label><input type="checkbox" value="Japanese"> Japanese</label>
-            <label><input type="checkbox" value="Indian"> Indian</label>
-            <label><input type="checkbox" value="Thai"> Thai</label>
-            <label><input type="checkbox" value="Korean"> Korean</label>
-            <label><input type="checkbox" value="French"> French</label>
-            <label><input type="checkbox" value="American"> American</label>
-            <label><input type="checkbox" value="Mediterranean"> Mediterranean</label>
-            <label><input type="checkbox" value="Vietnamese"> Vietnamese</label>
+            <label class="block"><input type="checkbox" value="Italian"> Italian</label>
+            <label class="block"><input type="checkbox" value="Chinese"> Chinese</label>
+            <label class="block"><input type="checkbox" value="Mexican"> Mexican</label>
+            <label class="block"><input type="checkbox" value="Japanese"> Japanese</label>
+            <label class="block"><input type="checkbox" value="Indian"> Indian</label>
+            <label class="block"><input type="checkbox" value="Thai"> Thai</label>
+            <label class="block"><input type="checkbox" value="Korean"> Korean</label>
+            <label class="block"><input type="checkbox" value="French"> French</label>
+            <label class="block"><input type="checkbox" value="American"> American</label>
+            <label class="block"><input type="checkbox" value="Mediterranean"> Mediterranean</label>
+            <label class="block"><input type="checkbox" value="Vietnamese"> Vietnamese</label>
           </div>
         </div>
-        <div>
+        <!-- <div class="relative">
           <label for="open-now-filter" class="font-medium block mb-1">Open Now</label>
-          <select id="open-now-filter" class="px-4 py-2 border rounded w-32">
-            <option value="">All</option>
-            <option value="true">Yes</option>
-          </select>
+          <div class="relative w-32">
+            <select id="open-now-filter" class="appearance-none px-4 py-2 border rounded w-full bg-white pr-8">
+              <option value="">All</option>
+              <option value="true">Yes</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div> -->
+        <div class="relative">
+          <label class="font-medium block mb-1">Open Now</label>
+          <div class="dropdown-btn bg-white px-4 py-2 border rounded cursor-pointer w-48 flex justify-between items-center" data-dropdown-id="open-now-dropdown" onclick="handleDropdownClick(event)">
+            <span>Select Availability</span>
+            <svg class="w-4 h-4 text-gray-500 ml-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          <div id="open-now-dropdown" class="dropdown-content absolute bg-white border rounded shadow-lg mt-1 p-3 z-10 hidden w-48 space-y-1 text-sm">
+            <label class="block"><input type="radio" name="openNow" value=""> All</label>
+            <label class="block"><input type="radio" name="openNow" value="true"> Yes</label>
+          </div>
         </div>
       </div>
     </div>
@@ -85,24 +116,56 @@
     //   const dropdown = document.getElementById('cuisine-dropdown');
     //   dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
     // }
-    function toggleDropdown() {
-      const dropdown = document.getElementById('cuisine-dropdown');
-      dropdown.classList.toggle('hidden');
+
+    function handleDropdownClick(event) {
+      const dropdownId = event.currentTarget.getAttribute('data-dropdown-id');
+      const allDropdowns = document.querySelectorAll('.dropdown-content');
+
+      allDropdowns.forEach(dropdown => {
+        if (dropdown.id !== dropdownId) dropdown.classList.add('hidden');
+      });
+
+      const targetDropdown = document.getElementById(dropdownId);
+      if (targetDropdown) {
+        targetDropdown.classList.toggle('hidden');
+      }
+
+      event.stopPropagation();
     }
 
     document.addEventListener('click', function (e) {
-      const dropdown = document.getElementById('cuisine-dropdown');
-      const btn = document.querySelector('.dropdown-btn');
-      if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
-        dropdown.classList.add('hidden');
+      const dropdownButtons = document.querySelectorAll('.dropdown-btn');
+      const allDropdowns = document.querySelectorAll('.dropdown-content');
+
+      let clickedInsideAny = false;
+
+      dropdownButtons.forEach(btn => {
+        const dropdownId = btn.getAttribute('data-dropdown-id');
+        const dropdown = document.getElementById(dropdownId);
+
+        if (btn.contains(e.target) || dropdown.contains(e.target)) {
+          clickedInsideAny = true;
+        }
+      });
+
+      if (!clickedInsideAny) {
+        allDropdowns.forEach(dropdown => dropdown.classList.add('hidden'));
       }
     });
 
+    // document.addEventListener('click', function (e) {
+    //   const dropdown = document.getElementById('cuisine-dropdown');
+    //   const btn = document.querySelector('.dropdown-btn');
+    //   if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+    //     dropdown.classList.add('hidden');
+    //   }
+    // });
+
     function performSearch(save = true, callback = null) {
       const query = document.getElementById('search-box').value.trim();
-      const priceFilter = Array.from(document.querySelectorAll('#price-checkboxes input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
+      const priceFilter = Array.from(document.querySelectorAll('#price-dropdown input[type="checkbox"]:checked')).map(cb => cb.value);
       const cuisineFilter = Array.from(document.querySelectorAll('#cuisine-dropdown input[type="checkbox"]:checked')).map(cb => cb.value);
-      const openNowFilter = document.getElementById('open-now-filter').value;
+      const openNowFilter = document.querySelector('input[name="openNow"]:checked')?.value || '';
 
       const resultsDiv = document.getElementById('results');
       if (query.length < 3) {
