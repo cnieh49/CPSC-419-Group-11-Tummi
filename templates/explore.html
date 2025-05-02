@@ -1,169 +1,79 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <title>Explore Restaurants</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 2rem;
-    }
-    .search-container {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      max-width: 600px;
-      margin-top: 1rem;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 12px;
-      font-size: 18px;
-      margin-right: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button.search-btn {
-      width: 150px;
-      font-size: 16px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background-color: #f8f9fa;
-      color: #333;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button.search-btn:hover {
-      background-color: #e2e6ea;
-    }
-    .filter-container {
-      display: flex;
-      justify-content: flex-start;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .filter-container label {
-      font-weight: bold;
-      margin-right: 10px;
-    }
-    .filter-container select {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .result {
-      border: 1px solid #ddd;
-      padding: 12px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-    }
-    .result h3 {
-      margin: 0 0 5px;
-    }
-    .result p {
-      margin: 0;
-    }
-    .btn {
-      padding: 5px 10px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      background-color: #f8f9fa;
-      color: #333;
-      cursor: pointer;
-      border-radius: 5px;
-      margin-top: 10px;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .btn:hover {
-      background-color: #e2e6ea;
-    }
-    .custom-dropdown {
-      position: relative;
-      display: inline-block;
-    }
-
-    .dropdown-btn {
-      padding: 3px 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 12px;
-      background-color: #f8f9fa;
-      cursor: pointer;
-      width: 200px;
-    }
-
-    .dropdown-btn:hover {
-      background-color: #e2e6ea;
-    }
-
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      background-color: #fff;
-      min-width: 200px;
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      z-index: 100;
-      padding: 10px;
-      box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h2>Explore Restaurants</h2>
-  <button onclick="window.location.href='/dashboard-page'" class="btn">← Back to Dashboard</button>
 
-  <div class="search-container">
-    <input type="text" id="search-box" placeholder="Search restaurants by name or location..." onkeydown="if(event.key==='Enter'){event.preventDefault();performSearch();}">
-    <button class="search-btn" onclick="performSearch()">Search</button>
+<body class="bg-white text-gray-800 min-h-screen px-4 pt-0 pb-10">
+  <div>
+    <img src="{{ url_for('static', filename='images/tummi-logo.png') }}" alt="Tummi logo" class="h-20">
+    <p id="user-email" class="text-gray-600"></p>
   </div>
+  <div class="max-w-5xl mx-auto space-y-8">
+    <a href="/dashboard-page" class="text-sm bg-gray-100 border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">←
+      Dashboard</a>
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Explore Restaurants</h2>
 
-  <div class="filter-container">
-    <div>
-      <label>Price Range</label>
-      <div id="price-checkboxes">
-        <label><input type="checkbox" value="1" id="price-1"> $</label>
-        <label><input type="checkbox" value="2" id="price-2"> $$</label>
-        <label><input type="checkbox" value="3" id="price-3"> $$$</label>
-        <label><input type="checkbox" value="4" id="price-4"> $$$$</label>
-      </div>
+    <!-- <div class="flex items-center justify-between">
+      <h2 class="text-3xl font-bold">Explore Restaurants</h2>
+      <button onclick="window.location.href='/dashboard-page'"
+        class="text-sm bg-gray-100 border px-4 py-2 rounded hover:bg-gray-200 shadow-sm">← Back to Dashboard</button>
+    </div> -->
+
+    <div class="flex flex-col sm:flex-row gap-4 items-center">
+      <input type="text" id="search-box" placeholder="Search by name or location..."
+        class="flex-1 px-4 py-2 border border-gray-300 rounded-md"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();performSearch();}" />
+      <button onclick="performSearch()"
+        class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md">Search</button>
     </div>
 
-    <div class="filter-row">
-      <label style="white-space: nowrap;">Cuisine Type</label>
-      <div class="custom-dropdown">
-        <div class="dropdown-btn" onclick="toggleDropdown()">Select Cuisine ⏷</div>
-        <div id="cuisine-dropdown" class="dropdown-content">
-          <label><input type="checkbox" value="Italian"> Italian</label><br>
-          <label><input type="checkbox" value="Chinese"> Chinese</label><br>
-          <label><input type="checkbox" value="Mexican"> Mexican</label><br>
-          <label><input type="checkbox" value="Japanese"> Japanese</label><br>
-          <label><input type="checkbox" value="Indian"> Indian</label><br>
-          <label><input type="checkbox" value="Thai"> Thai</label><br>
-          <label><input type="checkbox" value="Korean"> Korean</label><br>
-          <label><input type="checkbox" value="French"> French</label><br>
-          <label><input type="checkbox" value="American"> American</label><br>
-          <label><input type="checkbox" value="Mediterranean"> Mediterranean</label><br>
-          <label><input type="checkbox" value="Vietnamese"> Vietnamese</label><br>
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+      <div class="flex flex-wrap gap-6 items-start">
+        <div>
+          <label class="font-medium block mb-1">Price Range</label>
+          <div id="price-checkboxes" class="space-x-2">
+            <label><input type="checkbox" value="1" id="price-1"> $</label>
+            <label><input type="checkbox" value="2" id="price-2"> $$</label>
+            <label><input type="checkbox" value="3" id="price-3"> $$$</label>
+            <label><input type="checkbox" value="4" id="price-4"> $$$$</label>
+          </div>
+        </div>
+        <div class="relative">
+          <label class="font-medium block mb-1">Cuisine Type</label>
+          <div class="dropdown-btn bg-white px-4 py-2 border rounded cursor-pointer w-48" onclick="toggleDropdown()">
+            Select Cuisine ⏷</div>
+          <div id="cuisine-dropdown"
+            class="dropdown-content absolute bg-white border rounded shadow-lg mt-1 p-3 max-h-48 overflow-y-auto z-10 hidden w-48 space-y-1 text-sm">
+            <label><input type="checkbox" value="Italian"> Italian</label>
+            <label><input type="checkbox" value="Chinese"> Chinese</label>
+            <label><input type="checkbox" value="Mexican"> Mexican</label>
+            <label><input type="checkbox" value="Japanese"> Japanese</label>
+            <label><input type="checkbox" value="Indian"> Indian</label>
+            <label><input type="checkbox" value="Thai"> Thai</label>
+            <label><input type="checkbox" value="Korean"> Korean</label>
+            <label><input type="checkbox" value="French"> French</label>
+            <label><input type="checkbox" value="American"> American</label>
+            <label><input type="checkbox" value="Mediterranean"> Mediterranean</label>
+            <label><input type="checkbox" value="Vietnamese"> Vietnamese</label>
+          </div>
+        </div>
+        <div>
+          <label for="open-now-filter" class="font-medium block mb-1">Open Now</label>
+          <select id="open-now-filter" class="px-4 py-2 border rounded w-32">
+            <option value="">All</option>
+            <option value="true">Yes</option>
+          </select>
         </div>
       </div>
     </div>
-    
 
-    <div>
-      <label for="open-now-filter">Open Now</label>
-      <select id="open-now-filter">
-        <option value="">All</option>
-        <option value="true">Yes</option>
-      </select>
-    </div>
+    <div id="results" class="space-y-6"></div>
   </div>
 
-  <div id="results"></div>
 
   <script>
     const token = localStorage.getItem('token');
@@ -171,12 +81,16 @@
       window.location.href = '/login-page';
     }
 
+    // function toggleDropdown() {
+    //   const dropdown = document.getElementById('cuisine-dropdown');
+    //   dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    // }
     function toggleDropdown() {
       const dropdown = document.getElementById('cuisine-dropdown');
-      dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+      dropdown.classList.toggle('hidden');
     }
 
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
       const dropdown = document.getElementById('cuisine-dropdown');
       const btn = document.querySelector('.dropdown-btn');
       if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
@@ -189,7 +103,7 @@
       const priceFilter = Array.from(document.querySelectorAll('#price-checkboxes input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
       const cuisineFilter = Array.from(document.querySelectorAll('#cuisine-dropdown input[type="checkbox"]:checked')).map(cb => cb.value);
       const openNowFilter = document.getElementById('open-now-filter').value;
-      
+
       const resultsDiv = document.getElementById('results');
       if (query.length < 3) {
         resultsDiv.innerHTML = '';
@@ -209,42 +123,37 @@
         addtoURL += `&price=${price}`;
       });
 
-      // cTest = '';
       cuisineFilter.forEach(cuisine => {
-        // cTest += `&categories=${encodeURIComponent(cuisine)}`
         addtoURL += `&categories=${encodeURIComponent(cuisine)}`;
       });
       // console.log("ctest", `${cTest}`);
 
-      if (openNowFilter === 'true') {
-        addtoURL += `&open_now=true`;
-      }
+      if (openNowFilter === 'true') addtoURL += `&open_now=true`;
 
       console.log("url", `/yelp-search?query=${encodeURIComponent(query)}${addtoURL}`);
 
       fetch(`/yelp-search?query=${encodeURIComponent(query)}${addtoURL}`, {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(data => {
-        // console.log("API Response:", data);
-        resultsDiv.innerHTML = '';
-        data.forEach(place => {
-          const div = document.createElement('div');
-          div.className = 'result';
-          div.innerHTML = `
-            <h3>${place.name}</h3>
-            <p>${place.location.address1}, ${place.location.city}</p>
+        .then(res => res.json())
+        .then(data => {
+          resultsDiv.innerHTML = '';
+          data.forEach(place => {
+            const div = document.createElement('div');
+            div.className = 'bg-white border border-gray-200 rounded-md p-4 shadow-sm';
+            div.innerHTML = `
+            <h3 class="text-xl font-semibold mb-1">${place.name}</h3>
+            <p class="text-gray-600">${place.location.address1}, ${place.location.city}</p>
             <p><strong>Price:</strong> ${place.price || 'N/A'}</p>
             <p><strong>Cuisine:</strong> ${place.categories.map(c => c.title).join(', ')}</p>
-            <p><strong>Open Now:</strong> ${place.business_hours[0].is_open_now ? 'Yes' : 'No'}</p>
-            <a href="/restaurant/${encodeURIComponent(place.name)}" class="btn">View Details</a>
+            <p><strong>Open Now:</strong> ${place.business_hours[0]?.is_open_now ? 'Yes' : 'No'}</p>
+            <a href="/restaurant/${encodeURIComponent(place.name)}"
+               class="inline-block mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">View Details</a>
           `;
-          resultsDiv.appendChild(div);
+            resultsDiv.appendChild(div);
+          });
+          if (callback) callback();
         });
-
-        if (callback) callback();
-      });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -266,4 +175,5 @@
     });
   </script>
 </body>
+
 </html>
