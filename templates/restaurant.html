@@ -1,50 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Restaurant Page</title>
-  <style>
-    body { font-family: sans-serif; margin: 2rem; }
-    .review { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 6px; }
-    .review h4 { margin: 0 0 5px; }
-    .review p { margin: 0; }
-    .btn {
-      padding: 5px 10px;
-      border: 1px solid #ccc;
-      background-color: #f8f9fa;
-      color: #333;
-      cursor: pointer;
-      border-radius: 5px;
-      margin-bottom: 10px;
-    }
-    .btn:hover {
-      background-color: #e2e6ea;
-    }
-    .like-btn {
-      margin-left: 10px;
-    }
-    img.review-img {
-      max-width: 200px;
-      margin-top: 10px;
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-  <h2 id="restaurant-title">Loading Restaurant...</h2>
-  <button onclick="window.location.href='/explore'" class="btn">← Back to Explore</button>
+<body class="bg-gray-50 text-gray-800 min-h-screen p-6">
+  <div class="max-w-4xl mx-auto space-y-8">
+    <button onclick="window.location.href='/explore'"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm shadow">← Back</button>
+    <div class="flex items-center justify-between">
+      <h2 id="restaurant-title" class="text-4xl font-bold">Loading...</h2>
+    </div>
 
-  <h3>Restaurant Details</h3>
-  <div id="restaurant-details" style="margin: 1rem 0;"></div>
+    <div id="restaurant-details" class="bg-white p-6 rounded-lg shadow-md space-y-3">
+      <p class="text-sm text-gray-500">Loading details...</p>
+    </div>
 
-  <h3>Reviews by Your Friends</h3>
-  <div id="reviews"></div>
+    <div>
+      <h3 class="text-2xl font-semibold mb-4">Reviews by Your Friends</h3>
+      <div id="reviews" class="space-y-6"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"
+    class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 hidden bg-green-500 text-white px-6 py-3 rounded-md shadow-lg max-w-sm w-full text-center transition duration-500">
+  </div>
 
   <script>
     const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login-page';
-    }
+    if (!token) window.location.href = '/login-page';
 
     const restaurantName = decodeURIComponent(window.location.pathname.split('/').pop());
     document.getElementById('restaurant-title').textContent = restaurantName;
@@ -55,176 +43,141 @@
       const isPM = hours >= 12;
       const newHours = hours % 12 || 12;
       const newMinutes = minutes < 10 ? `0${minutes}` : minutes;
-      const period = isPM ? 'PM' : 'AM';
-      return `${newHours}:${newMinutes} ${period}`;
+      return `${newHours}:${newMinutes} ${isPM ? 'PM' : 'AM'}`;
     }
 
     function whichDay(index) {
-      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-      return days[index];
+      return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index];
     }
 
     fetch(`/restaurant-details/${encodeURIComponent(restaurantName)}`, {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
+      headers: { 'Authorization': 'Bearer ' + token }
     })
-    .then(res => res.json())
-    .then(data => {
-      console.log('hello is this working');
-      console.log('Fetched restaurant details:', data);
-      const detailsDiv = document.getElementById('restaurant-details');
-      if (!data || !data.location) {
-        detailsDiv.innerHTML = '<p>Restaurant details unavailable.</p>';
-        return;
-      }
-
-      const address = `${data.location.address1 || ''}, ${data.location.city || ''}, ${data.location.state || ''} ${data.location.zip_code || ''}`;
-      const categories = (data.categories || []).map(c => c.title).join(', ');
-      const price = data.price || 'N/A';
-      const rating = data.rating ? `${data.rating} ★` : 'No rating';
-      const phone = data.display_phone || 'N/A';
-      const image = data.image_url ? `<img src="${data.image_url}" alt="Restaurant image" style="max-width:300px; margin-top:10px;">` : '';
-
-      let hours = '';
-      let isOpenNowText = 'Not available';
-
-      if (data.business_hours && Array.isArray(data.business_hours)) {
-        const businessInfo = data.business_hours[0];
-        isOpenNowText = businessInfo.is_open_now ? 'Yes, the restaurant is currently open' : 'No, the restaurant is currently closed';
-
-        if (businessInfo.open && Array.isArray(businessInfo.open)) {
-          hours = '<h4>Business Hours:</h4><ul>';
-          // businessInfo.open.forEach(hour => {
-          //   const Day = whichDay(hour.day);
-          //   let startTime = convertTo12HourFormat(hour.start);
-          //   let endTime = convertTo12HourFormat(hour.end);
-          //   if (hour.is_overnight) {
-          //     endTime += ' (overnight)';
-          //   }
-          //   hours += `<li>${Day}: ${startTime} - ${endTime}</li>`;
-          // });
-          for (let i = 0; i < 7; i++) {
-            const Day = whichDay(i);
-            const dayHours = businessInfo.open.find(hour => hour.day === i);
-
-            if (dayHours) {
-              let startTime = convertTo12HourFormat(dayHours.start);
-              let endTime = convertTo12HourFormat(dayHours.end);
-
-              if (dayHours.is_overnight) {
-                endTime += ' (overnight)';
-              }
-
-              hours += `<li>${Day}: ${startTime} - ${endTime}</li>`;
-            } else {
-              hours += `<li>${Day}: Closed</li>`;
-            }
-          }
-          hours += '</ul>';
-        }
-        else {
-          hours = '<p>No hours given for this restaurant.</p>';
-        }
-      }
-
-      detailsDiv.innerHTML = `
-        <p><strong>Address:</strong> ${address}</p>
-        <p><strong>Cuisine:</strong> ${categories}</p>
-        <p><strong>Price:</strong> ${price}</p>
-        <p><strong>Rating:</strong> ${rating}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        ${image}
-        <p><strong></strong> ${isOpenNowText}</p>
-        ${hours}
-      `;
-    })
-    .catch(err => {
-      console.error('Error fetching restaurant details:', err);
-      document.getElementById('restaurant-details').innerHTML = '<p>Error loading restaurant details.</p>';
-    });
-
-
-    fetch(`/restaurant-reviews/${encodeURIComponent(restaurantName)}`, {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    })
-    .then(async res => {
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to load reviews');
-      }
-      return res.json();
-    })
-    .then(reviews => {
-      if (!Array.isArray(reviews)) throw new Error('Invalid data format');
-
-      const container = document.getElementById('reviews');
-      if (reviews.length === 0) {
-        container.innerHTML = '<p>No reviews yet from your friends.</p>';
-        return;
-      }
-
-      reviews.forEach(r => {
-        const div = document.createElement('div');
-        div.className = 'review';
-        let picturesHTML = '';
-        try {
-          const pics = JSON.parse(r.pictures || "[]");
-          pics.forEach(pic => {
-            picturesHTML += `<img class="review-img" src="${pic}" alt="Review image">`;
-          });
-        } catch (e) {}
-
-        const reviewId = r.id;
-
-        div.innerHTML = `
-          <h4><a href="/user/${r.user_id}">${r.email}</a></h4>
-          <p><strong>Location:</strong> ${r.location}</p>
-          <p><strong>Notes:</strong> ${r.notes}</p>
-          <p><small>Posted on: ${r.timestamp}</small></p>
-          ${picturesHTML}
-          <p id="likes-${reviewId}">❤️ <span class="like-count">0</span>
-            <button class="btn like-btn" onclick="toggleLike(${reviewId})">Like</button>
-          </p>
-        `;
-        container.appendChild(div);
-        updateLikeCount(reviewId);
-      });
-    })
-    .catch(err => {
-      console.error(err);
-      document.getElementById('reviews').innerHTML = `<p>Error loading reviews: ${err.message}</p>`;
-    });
-
-    function updateLikeCount(reviewId) {
-      fetch(`/likes-count/${reviewId}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
       .then(res => res.json())
       .then(data => {
-        const el = document.querySelector(`#likes-${reviewId} .like-count`);
-        const btn = document.querySelector(`#likes-${reviewId} button`);
-        if (el) el.textContent = data.count;
-        if (btn) btn.textContent = data.liked_by_user ? 'Unlike' : 'Like';
+        const details = document.getElementById('restaurant-details');
+        if (!data || !data.location) {
+          details.innerHTML = '<p>Restaurant details unavailable.</p>';
+          return;
+        }
+
+        const address = `${data.location.address1 || ''}, ${data.location.city || ''}, ${data.location.state || ''} ${data.location.zip_code || ''}`;
+        const categories = (data.categories || []).map(c => c.title).join(', ');
+        const price = data.price || 'N/A';
+        const rating = data.rating ? `${data.rating} ★` : 'No rating';
+        const phone = data.display_phone || 'N/A';
+        const image = data.image_url
+          ? `<img src="${data.image_url}" alt="Restaurant image" class="rounded-md w-full max-w-md mx-auto my-4">`
+          : '';
+
+        let hours = '';
+        let isOpenNowText = '<span class="text-gray-600">Not available</span>';
+
+        if (data.business_hours?.[0]) {
+          const openNow = data.business_hours[0].is_open_now;
+          isOpenNowText = openNow
+            ? '<span class="text-green-600 font-medium">Open Now</span>'
+            : '<span class="text-red-500 font-medium">Closed Now</span>';
+
+          const weekly = Array(7).fill(null).map((_, i) => {
+            const match = data.business_hours[0].open.find(h => h.day === i);
+            if (!match) return `<div>${whichDay(i)}: Closed</div>`;
+            const start = convertTo12HourFormat(match.start);
+            const end = convertTo12HourFormat(match.end);
+            return `<div>${whichDay(i)}: ${start} – ${end}${match.is_overnight ? ' (overnight)' : ''}</div>`;
+          }).join('');
+          hours = `<div class="grid grid-cols-2 gap-2 text-sm text-gray-700">${weekly}</div>`;
+        }
+
+        details.innerHTML = `
+          ${image}
+          <p><strong>Address:</strong> ${address}</p>
+          <p><strong>Cuisine:</strong> ${categories}</p>
+          <p><strong>Price:</strong> ${price}</p>
+          <p><strong>Rating:</strong> ${rating}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          <p><strong>Status:</strong> ${isOpenNowText}</p>
+          <div class="mt-3">
+            <h4 class="font-semibold mb-1">Business Hours:</h4>
+            ${hours}
+          </div>
+        `;
+      })
+      .catch(() => {
+        document.getElementById('restaurant-details').innerHTML = '<p>Error loading restaurant details.</p>';
       });
+
+    fetch(`/restaurant-reviews/${encodeURIComponent(restaurantName)}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then(reviews => {
+        const container = document.getElementById('reviews');
+        if (!reviews.length) {
+          container.innerHTML = '<p class="text-gray-500">No reviews yet from your friends.</p>';
+          return;
+        }
+
+        reviews.forEach(r => {
+          const div = document.createElement('div');
+          div.className = 'bg-white border border-gray-200 p-4 rounded-md shadow-md';
+
+          const pics = (() => {
+            try {
+              return JSON.parse(r.pictures || '[]');
+            } catch { return []; }
+          })();
+
+          const picturesHTML = pics.map(pic => `
+            <img src="${pic}" alt="Review image" class="w-32 h-32 object-cover rounded border" />
+          `).join('');
+
+          div.innerHTML = `
+            <h4 class="font-semibold text-lg mb-1">
+              <a href="/user/${r.user_id}" class="text-blue-600 hover:underline">${r.email}</a>
+            </h4>
+            <p class="text-sm"><strong>Location:</strong> ${r.location}</p>
+            <p class="text-sm"><strong>Notes:</strong> ${r.notes}</p>
+            <p class="text-xs text-gray-500 mb-2">Posted on: ${r.timestamp}</p>
+            <div class="flex flex-wrap gap-3 mb-2">${picturesHTML}</div>
+            <p id="likes-${r.id}" class="text-sm">
+              ❤️ <span class="like-count font-medium text-red-500">0</span>
+              <button class="ml-3 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-md" onclick="toggleLike(${r.id})">Like</button>
+            </p>
+          `;
+          container.appendChild(div);
+          updateLikeCount(r.id);
+        });
+      })
+      .catch(err => {
+        document.getElementById('reviews').innerHTML = `<p class="text-red-500">Error loading reviews.</p>`;
+        console.error(err);
+      });
+
+    function updateLikeCount(id) {
+      fetch(`/likes-count/${id}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(res => res.json())
+        .then(data => {
+          const el = document.querySelector(`#likes-${id} .like-count`);
+          const btn = document.querySelector(`#likes-${id} button`);
+          if (el) el.textContent = data.count;
+          if (btn) btn.textContent = data.liked_by_user ? 'Unlike' : 'Like';
+        });
     }
 
-    function toggleLike(reviewId) {
-      if (!reviewId) return;
-      const button = document.querySelector(`#likes-${reviewId} button`);
-      const isUnlike = button.textContent === 'Unlike';
-
-      fetch(`/${isUnlike ? 'unlike' : 'like'}/${reviewId}`, {
+    function toggleLike(id) {
+      const btn = document.querySelector(`#likes-${id} button`);
+      const isUnlike = btn.textContent === 'Unlike';
+      fetch(`/${isUnlike ? 'unlike' : 'like'}/${id}`, {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(() => updateLikeCount(reviewId))
-      .catch(err => console.error(err));
+        .then(() => updateLikeCount(id))
+        .catch(console.error);
     }
   </script>
-
 </body>
+
 </html>
