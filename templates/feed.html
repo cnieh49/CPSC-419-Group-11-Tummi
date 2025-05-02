@@ -1,70 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Friends Feed</title>
-  <style>
-    body { font-family: sans-serif; margin: 2rem; }
-    input, button { margin: 5px 0; padding: 5px; }
-    ul { list-style: none; padding: 0; }
-    li { margin-bottom: 8px; }
-    a { text-decoration: none; color: #007BFF; }
-    a:hover { text-decoration: underline; }
-
-    .btn {
-      padding: 5px 10px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      background-color: #f8f9fa;
-      color: #333;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .btn:hover {
-      background-color: #e2e6ea;
-    }
-
-    .btn-unfollow {
-      margin-left: 10px;
-      background-color: #f8d7da;
-      border-color: #f5c6cb;
-      color: #721c24;
-    }
-
-    .btn-unfollow:hover {
-      background-color: #f1b0b7;
-    }
-
-    .review {
-      border-top: 1px solid #ccc;
-      padding-top: 10px;
-      margin-top: 20px;
-    }
-
-    img {
-      max-width: 300px;
-      display: block;
-      margin-top: 10px;
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-  <h2>Friends You're Following</h2>
-  <button onclick="window.location.href='/dashboard-page'" class="btn">← Back to Dashboard</button>
+<body class="bg-gray-100 min-h-screen py-10 px-4 text-gray-800">
+  <div class="max-w-4xl mx-auto space-y-8">
 
-  <h3>Follow a User</h3>
-  <input type="email" id="follow-email" placeholder="Enter email to follow">
-  <button class="btn" onclick="followUser()">Follow</button>
-  <p id="follow-msg"></p>
+    <!-- Header -->
+    <a href="/dashboard-page"
+    class="absolute top-4 left-4 text-sm bg-white border px-3 py-1 rounded hover:bg-gray-100 shadow-sm">←
+    Dashboard</a>
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Friends Feed</h2>
+    <!-- <div class="flex items-center justify-between">
+      <button onclick="window.location.href='/dashboard-page'"
+        class="text-sm bg-white border px-4 py-2 rounded hover:bg-gray-100 shadow-sm">← Back to Dashboard</button>
+      <h2 class="text-3xl font-bold">Friends Feed</h2>
+    </div> -->
 
-  <h3>Following List</h3>
-  <ul id="friend-list">Loading...</ul>
+    <!-- Follow a user -->
+    <div class="bg-white p-6 rounded-xl shadow space-y-4">
+      <h3 class="text-xl font-semibold">Follow a User</h3>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+        <input type="email" id="follow-email" placeholder="Enter email to follow"
+          class="flex-1 px-4 py-2 border rounded-md" />
+        <button onclick="followUser()"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">Follow</button>
+      </div>
+      <p id="follow-msg" class="text-sm font-medium"></p>
+    </div>
 
-  <hr>
-  <h3>Friends' Recent Reviews</h3>
-  <div id="friend-reviews">Loading...</div>
+    <!-- Following list -->
+    <div class="bg-white p-6 rounded-xl shadow space-y-4">
+      <h3 class="text-xl font-semibold">Friends You're Following</h3>
+      <ul id="friend-list" class="space-y-3 text-sm">Loading...</ul>
+    </div>
+
+    <!-- Friends' recent reviews -->
+    <div class="bg-white p-6 rounded-xl shadow space-y-6">
+      <h3 class="text-xl font-semibold">Recent Reviews from Friends</h3>
+      <div id="friend-reviews" class="space-y-6 text-sm">Loading...</div>
+    </div>
+
+  </div>
 
   <script>
     const token = localStorage.getItem('token');
@@ -77,24 +58,24 @@
       fetch('/following', {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(users => {
-        const list = document.getElementById('friend-list');
-        list.innerHTML = '';
+        .then(res => res.json())
+        .then(users => {
+          const list = document.getElementById('friend-list');
+          list.innerHTML = '';
 
-        if (users.length === 0) {
-          list.innerHTML = '<p>You are not following anyone yet.</p>';
-        } else {
-          users.forEach(user => {
-            const li = document.createElement('li');
-            li.innerHTML = `
+          if (users.length === 0) {
+            list.innerHTML = '<p>You are not following anyone yet.</p>';
+          } else {
+            users.forEach(user => {
+              const li = document.createElement('li');
+              li.innerHTML = `
               <a href="/user/${user.id}">${user.email}</a>
               <button onclick="unfollowUser(${user.id})" class="btn btn-unfollow">Unfollow</button>
             `;
-            list.appendChild(li);
-          });
-        }
-      });
+              list.appendChild(li);
+            });
+          }
+        });
     }
 
     function followUser() {
@@ -110,38 +91,38 @@
       fetch('/me', {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(me => {
-        fetch('/all-users', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        })
         .then(res => res.json())
-        .then(users => {
-          const target = users.find(u => u.email === email);
-          if (!target) {
-            msg.textContent = 'User not found.';
-            msg.style.color = 'red';
-            return;
-          }
-          if (target.email === me.email) {
-            msg.textContent = 'You cannot follow yourself.';
-            msg.style.color = 'red';
-            return;
-          }
-
-          fetch(`/follow/${target.id}`, {
-            method: 'POST',
+        .then(me => {
+          fetch('/all-users', {
             headers: { 'Authorization': 'Bearer ' + token }
           })
-          .then(res => res.json())
-          .then(data => {
-            msg.textContent = data.message;
-            msg.style.color = data.message.includes('Now following') ? 'green' : 'red';
-            loadFriends();
-            loadFriendReviews();
-          });
+            .then(res => res.json())
+            .then(users => {
+              const target = users.find(u => u.email === email);
+              if (!target) {
+                msg.textContent = 'User not found.';
+                msg.style.color = 'red';
+                return;
+              }
+              if (target.email === me.email) {
+                msg.textContent = 'You cannot follow yourself.';
+                msg.style.color = 'red';
+                return;
+              }
+
+              fetch(`/follow/${target.id}`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+              })
+                .then(res => res.json())
+                .then(data => {
+                  msg.textContent = data.message;
+                  msg.style.color = data.message.includes('Now following') ? 'green' : 'red';
+                  loadFriends();
+                  loadFriendReviews();
+                });
+            });
         });
-      });
     }
 
     function unfollowUser(userId) {
@@ -151,47 +132,47 @@
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(data => {
-        alert(data.message);
-        loadFriends();
-        loadFriendReviews();
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Something went wrong.');
-      });
+        .then(res => res.json())
+        .then(data => {
+          alert(data.message);
+          loadFriends();
+          loadFriendReviews();
+        })
+        .catch(err => {
+          console.error(err);
+          alert('Something went wrong.');
+        });
     }
 
     function loadFriendReviews() {
       fetch('/feed', {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(reviews => {
-        const container = document.getElementById('friend-reviews');
-        container.innerHTML = '';
+        .then(res => res.json())
+        .then(reviews => {
+          const container = document.getElementById('friend-reviews');
+          container.innerHTML = '';
 
-        if (reviews.length === 0) {
-          container.innerHTML = '<p>Your friends haven’t posted any reviews yet.</p>';
-        } else {
-          reviews.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+          if (reviews.length === 0) {
+            container.innerHTML = '<p>Your friends haven’t posted any reviews yet.</p>';
+          } else {
+            reviews.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-          reviews.forEach(r => {
-            const div = document.createElement('div');
-            div.classList.add('review');
+            reviews.forEach(r => {
+              const div = document.createElement('div');
+              div.classList.add('review');
 
-            let picturesHTML = '';
-            try {
+              let picturesHTML = '';
+              try {
                 const pictures = JSON.parse(r.pictures || "[]");
                 pictures.forEach(url => {
-                    picturesHTML += `<img src="${url}" style="max-width: 200px; margin: 5px;">`;
+                  picturesHTML += `<img src="${url}" style="max-width: 200px; margin: 5px;">`;
                 });
-            } catch (e) {
+              } catch (e) {
                 console.error('Error parsing pictures:', e);
-            }
+              }
 
-            div.innerHTML = `
+              div.innerHTML = `
               <p><strong><a href="/user/${r.user_id}">${r.email}</a></strong> reviewed:</p>
               <h4>${r.restaurant_name}</h4>
               <p><strong>Location:</strong> ${r.location}</p>
@@ -203,28 +184,28 @@
                 <button class="btn like-toggle" data-id="${r.id}">Loading...</button>
               </div>
             `;
-            container.appendChild(div);
-            updateLikeCount(r.id);
-          });
-        }
-      });
+              container.appendChild(div);
+              updateLikeCount(r.id);
+            });
+          }
+        });
     }
 
     function updateLikeCount(reviewId) {
       fetch(`/likes-count/${reviewId}`, {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(res => res.json())
-      .then(data => {
-        const likeSection = document.querySelector(`#likes-${reviewId}`);
-        likeSection.querySelector('.like-count').textContent = data.count;
+        .then(res => res.json())
+        .then(data => {
+          const likeSection = document.querySelector(`#likes-${reviewId}`);
+          likeSection.querySelector('.like-count').textContent = data.count;
 
-        const btn = likeSection.querySelector('.like-toggle');
-        if (btn) {
-          btn.textContent = data.liked_by_user ? 'Unlike' : 'Like';
-          btn.onclick = () => toggleLike(reviewId, data.liked_by_user);
-        }
-      });
+          const btn = likeSection.querySelector('.like-toggle');
+          if (btn) {
+            btn.textContent = data.liked_by_user ? 'Unlike' : 'Like';
+            btn.onclick = () => toggleLike(reviewId, data.liked_by_user);
+          }
+        });
     }
 
     function toggleLike(reviewId, currentlyLiked) {
@@ -233,7 +214,7 @@
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(() => updateLikeCount(reviewId));
+        .then(() => updateLikeCount(reviewId));
     }
 
     loadFriends();
@@ -241,4 +222,5 @@
   </script>
 
 </body>
+
 </html>

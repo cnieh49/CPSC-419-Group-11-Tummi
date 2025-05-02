@@ -22,7 +22,7 @@
 
     .modal-content {
       max-height: 80vh;
-      overflow-y: auto; 
+      overflow-y: auto;
     }
 
     .modal {
@@ -52,32 +52,37 @@
       padding: 0;
       list-style: none;
     }
+
     .review-card {
       border: 1px solid #eee;
       border-radius: 5px;
       padding: 14px 18px;
       margin-bottom: 14px;
       background: #fafbfc;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
+
     .review-card .review-title {
       font-weight: bold;
       font-size: 1.1em;
       margin-bottom: 4px;
     }
+
     .review-card .review-meta {
       color: #888;
       font-size: 0.95em;
       margin-bottom: 7px;
     }
+
     .review-card .review-notes {
       margin-bottom: 5px;
     }
+
     .review-card .review-sentiment {
       font-size: 0.95em;
       color: #3a7d3a;
     }
-    </style>
+  </style>
 </head>
 
 <body>
@@ -90,20 +95,35 @@
     </div>
     <div class="flex flex-wrap gap-2">
       <button onclick="window.location.href='/profile-page'"
-        class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-sm">My Profile</button>
+        class="bg-emerald-400 hover:bg-emerald-500 text-white px-4 py-2 rounded-md text-sm">
+        My Profile
+      </button>
       <button onclick="window.location.href='/feed-page'"
-        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">Friends Feed</button>
+        class="bg-teal-400 hover:bg-sky-500 text-white px-4 py-2 rounded-md text-sm">
+        Friends Feed
+      </button>
       <button onclick="window.location.href='/compare-reviews'"
-        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm">Compare Reviews</button>
+        class="bg-cyan-400 hover:bg-teal-500 text-white px-4 py-2 rounded-md text-sm">
+        Compare Reviews
+      </button>
       <button onclick="window.location.href='/explore'"
-        class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md text-sm">Explore</button>
+        class="bg-sky-400 hover:bg-cyan-500 text-white px-4 py-2 rounded-md text-sm">
+        Explore
+      </button>
       <button onclick="showFollowers()"
-        class="bg-gray-100 hover:bg-gray-200 border text-sm px-4 py-2 rounded-md">Followers</button>
+        class="bg-indigo-400 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm">
+        View Followers
+      </button>
       <button onclick="showFollowing()"
-        class="bg-gray-100 hover:bg-gray-200 border text-sm px-4 py-2 rounded-md">Following</button>
-      <button onclick="logout()"
-        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm">Logout</button>
+        class="bg-indigo-400 hover:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm">
+        Following List
+      </button>
+      <button onclick="logout()" class="bg-rose-400 hover:bg-rose-500 text-white px-4 py-2 rounded-md text-sm">
+        Logout
+      </button>
     </div>
+
+
   </div>
 
   <!-- <div class="bg-white shadow p-6 rounded-md mb-6 max-w-xl mx-auto">
@@ -578,7 +598,7 @@
           alert("Unable to fetch likes.");
         });
     }
-    
+
 
     function openSimpleModal(title, bodyHtml) {
       const modalContainer = document.getElementById('modal-container');
