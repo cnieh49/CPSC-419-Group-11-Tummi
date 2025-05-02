@@ -31,6 +31,16 @@
         class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md">Search</button>
     </div>
 
+    <div id="selected-filters" class="bg-blue-100 text-black-800 p-3 rounded-md hidden">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="font-semibold text-lg">Your Filters:</h3>
+        <button onclick="clearAllFilters()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm transition">
+          Clear All Filters
+        </button>
+      </div>
+      <div id="filters-list" class="flex flex-wrap gap-2"></div>
+    </div>
+
     <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
       <div class="flex flex-wrap gap-6 items-start">
         <div class="relative">
@@ -112,11 +122,6 @@
       window.location.href = '/login-page';
     }
 
-    // function toggleDropdown() {
-    //   const dropdown = document.getElementById('cuisine-dropdown');
-    //   dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
-    // }
-
     function handleDropdownClick(event) {
       const dropdownId = event.currentTarget.getAttribute('data-dropdown-id');
       const allDropdowns = document.querySelectorAll('.dropdown-content');
@@ -152,14 +157,6 @@
         allDropdowns.forEach(dropdown => dropdown.classList.add('hidden'));
       }
     });
-
-    // document.addEventListener('click', function (e) {
-    //   const dropdown = document.getElementById('cuisine-dropdown');
-    //   const btn = document.querySelector('.dropdown-btn');
-    //   if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
-    //     dropdown.classList.add('hidden');
-    //   }
-    // });
 
     function performSearch(save = true, callback = null) {
       const query = document.getElementById('search-box').value.trim();
@@ -215,9 +212,78 @@
           `;
             resultsDiv.appendChild(div);
           });
+
+          updateSelectedFilters(priceFilter, cuisineFilter, openNowFilter);
           if (callback) callback();
         });
     }
+
+    function updateSelectedFilters(priceFilter, cuisineFilter, openNowFilter) {
+      const filtersDiv = document.getElementById('selected-filters');
+      const filtersList = document.getElementById('filters-list');
+      filtersList.innerHTML = '';
+
+      const addFilterPill = (label, value, onRemove) => {
+        const pill = document.createElement('div');
+        pill.className = 'inline-flex items-center bg-blue-200 text-black-800 text-sm px-3 py-1 rounded-full mr-2 mb-2';
+
+        const text = document.createElement('span');
+        text.textContent = label === 'Price' ? `${label}: ${'$'.repeat(parseInt(value))}` : `${label}: ${value}`;
+        pill.appendChild(text);
+
+        const close = document.createElement('button');
+        close.className = 'ml-2 text-black-700 hover:text-red-600 focus:outline-none';
+        close.innerHTML = '&times;';
+        close.onclick = onRemove;
+        pill.appendChild(close);
+
+        filtersList.appendChild(pill);
+      };
+
+      if (priceFilter.length > 0) {
+        priceFilter.forEach(p => {
+          addFilterPill('Price', p, () => {
+            document.querySelector(`#price-dropdown input[type="checkbox"][value="${p}"]`).checked = false;
+            performSearch();
+          });
+        });
+      }
+
+      if (cuisineFilter.length > 0) {
+        cuisineFilter.forEach(c => {
+          addFilterPill('Cuisine', c, () => {
+            document.querySelector(`#cuisine-dropdown input[type="checkbox"][value="${c}"]`).checked = false;
+            performSearch();
+          });
+        });
+      }
+
+      if (openNowFilter) {
+        const label = openNowFilter === 'true' ? 'Yes' : 'All';
+        addFilterPill('Open Now', label, () => {
+          document.querySelector(`input[name="openNow"][value="${openNowFilter}"]`).checked = false;
+          performSearch();
+        });
+      }
+
+      filtersDiv.classList.toggle('hidden', filtersList.children.length === 0);
+    }
+
+    document.querySelectorAll('#price-dropdown input[type="checkbox"], #cuisine-dropdown input[type="checkbox"], input[name="openNow"]').forEach(input => {
+      input.addEventListener('change', () => performSearch(true));
+    });
+
+    function clearAllFilters() {
+      document.querySelectorAll('#price-dropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#cuisine-dropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      const openNowRadios = document.querySelectorAll('input[name="openNow"]');
+      openNowRadios.forEach(rb => rb.checked = false);
+      document.getElementById('filters-list').innerHTML = '';
+      document.getElementById('selected-filters').classList.add('hidden');
+
+      performSearch();
+    }
+
 
     window.addEventListener('DOMContentLoaded', () => {
       const state = history.state;
