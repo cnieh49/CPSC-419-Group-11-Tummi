@@ -330,7 +330,7 @@ def delete_review(review_id):
 
     return jsonify({'message': 'Deleted the selected review'}), 200
 
-YELP_API_KEY = 'ummCpIkI7Wn4Rz804XeaIxsBSSNei5KFxzTl3vor1oJ2hl592M_qpKiy_bNf5eeb-hscmukmIZHWPmefXjO1W32Y_wznEL7pdfyHT9FDTYzymj2MEsQBxgUKPkPmZ3Yx'
+YELP_API_KEY = 'w4R9lrpiNFCv82-lbRluyeo9q3mOaXgw3XvfihkU8Cgl4rogusg99uDGZEA09XR0jnpJzfIp_gdljPfYHKTjGmKMgAwhddmigimcqpAGfJkjOvm4lxLdZVfxI0cUaHYx'
 YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'
 
 CUISINE_TO_CATEGORY = {
