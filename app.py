@@ -355,20 +355,24 @@ def delete_review(review_id):
     db.session.delete(curr_review)
     update_sentiment_count(user_id, curr_review.sentiment, -1)
     
-    # Now reindex the remaining reviews using the same ranking logic
+    # Get remaining reviews
     reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking).all()
-    total_reviews = len(reviews)
 
-    for i, r in enumerate(reviews):
-        if total_reviews > 1:
-            rank = round(10 - (i / (total_reviews - 1)) * 10, 1)
-        else:
-            rank = 10
-        print(f"Setting ID {r.id} ({r.restaurant_name}) to rank {rank}")
-        r.ranking = rank
+    if reviews:
+        min_rank = min(r.ranking for r in reviews)
+        max_rank = max(r.ranking for r in reviews)
+
+        # Avoid division by zero if all ranks are the same
+        for r in reviews:
+            if max_rank != min_rank:
+                new_rank = (r.ranking - min_rank) / (max_rank - min_rank) * 10
+            else:
+                new_rank = 10  # Or keep as is if there's only one left
+
+            print(f"Rescaling ID {r.id} ({r.restaurant_name}): {r.ranking:.1f} → {new_rank:.1f}")
+            r.ranking = round(new_rank, 1)
 
     db.session.commit()
-
 
     return jsonify({'message': 'Deleted the selected review'}), 200
 
