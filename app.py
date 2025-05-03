@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request, set_access_cookies, unset_jwt_cookies
 from flask_jwt_extended.exceptions import NoAuthorizationError
-from models import db, User, Like
+from models import db, User, Like, ReviewEntry
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from dotenv import load_dotenv
@@ -11,6 +11,8 @@ from io import BytesIO
 import os
 import json
 import requests
+from sortedcontainers import SortedList
+from sqlalchemy import or_
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv()
@@ -108,7 +110,7 @@ def dashboard():
 @jwt_required()
 def user_reviews():
     user_id = get_jwt_identity()
-    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking.desc()).all()
     return jsonify([{
         'id': r.id,
         'restaurant_name': r.restaurant_name,
@@ -117,7 +119,8 @@ def user_reviews():
         'sentiment': r.sentiment,
         'photo_url': r.photo_url,
         'pictures': r.pictures,
-        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        'ranking': round(r.ranking, 1) if r.ranking is not None else None
     } for r in reviews])
 
 @app.route('/uploads/<filename>')
@@ -297,7 +300,10 @@ def add_review():
     update_sentiment_count(user_id, review.sentiment, +1)
     db.session.commit()
     
-    return jsonify({'message': 'Review added successfully'}), 201
+    return jsonify({
+        'message': 'Review added successfully',
+        'new_review_id': review.id  # 👈 send the ID to frontend
+    }), 201
 
 @app.route('/edit-review/<int:review_id>', methods=['PUT'])
 @jwt_required()
@@ -348,7 +354,21 @@ def delete_review(review_id):
     
     db.session.delete(curr_review)
     update_sentiment_count(user_id, curr_review.sentiment, -1)
+    
+    # Now reindex the remaining reviews using the same ranking logic
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking).all()
+    total_reviews = len(reviews)
+
+    for i, r in enumerate(reviews):
+        if total_reviews > 1:
+            rank = round(10 - (i / (total_reviews - 1)) * 10, 1)
+        else:
+            rank = 10
+        print(f"Setting ID {r.id} ({r.restaurant_name}) to rank {rank}")
+        r.ranking = rank
+
     db.session.commit()
+
 
     return jsonify({'message': 'Deleted the selected review'}), 200
 
@@ -518,7 +538,7 @@ def user_profile_page(user_id):
 @app.route('/user-reviews/<int:user_id>')
 @jwt_required()
 def reviews_for_user(user_id):
-    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking.desc()).all()
     return jsonify([{
         'id': r.id,
         'restaurant_name': r.restaurant_name,
@@ -681,6 +701,127 @@ def custom_unauthorized_response(callback):
 @jwt.expired_token_loader
 def custom_expired_token_callback(jwt_header, jwt_payload):
     return redirect(url_for('login_page', next=request.path, msg='login_required'))
+
+def build_user_bst(user_id, exclude_review_id=None):
+    reviews = Review.query.filter(
+        Review.user_id == user_id,
+        Review.id != exclude_review_id
+    ).all()
+    bst = SortedList([ReviewEntry(r) for r in reviews])
+    
+    print("=== Sorted List Order ===")
+    for entry in bst:
+        review = entry.review
+        print(f"ID: {review.id}, Restaurant: {review.restaurant_name}, Ranking: {review.ranking}")
+
+    return bst
+
+@app.route('/start-comparison/<int:new_review_id>', methods=['GET'])
+@jwt_required()
+def start_comparison(new_review_id):
+    user_id = get_jwt_identity()
+
+    # Load BST (or ordered list of review IDs)
+    bst = build_user_bst(user_id, exclude_review_id=new_review_id)
+    review_ids = [entry.review.id for entry in bst]
+
+    if not review_ids:
+        # No existing reviews --> insert at top by default
+        return jsonify({
+            'action': 'insert',
+            'position': 0,
+            'message': 'No existing reviews, inserting at top.'
+        })
+
+    mid_index = len(review_ids) // 2
+    current_review_id = review_ids[mid_index]
+
+    # Return info to start the comparison
+    return jsonify({
+        'review_ids': review_ids,
+        'left': 0,
+        'right': len(review_ids) - 1,
+        'current': mid_index,
+        'new_review_id': new_review_id,
+        'compare_to_id': current_review_id
+    })
+
+@app.route('/submit-comparison', methods=['POST'])
+@jwt_required()
+def submit_comparison():
+    data = request.json
+    user_id = get_jwt_identity()
+
+    review_ids = data['review_ids']
+    left = data['left']
+    right = data['right']
+    current = data['current']
+    new_review_id = data['new_review_id']
+    answer = data['answer']  # 'better' or 'worse'
+
+    if answer == 'better':
+        if data['current'] == 0:
+            # This is the top review; new one is better -> insert at top
+            return jsonify({
+                'action': 'insert',
+                'position': 0
+            })
+        right = current - 1
+    elif answer == 'worse':
+        left = current + 1
+
+    if left > right:
+        # Found the position: left is the insert spot
+        return jsonify({
+            'action': 'insert',
+            'position': left
+        })
+
+    # Continue binary search
+    next_current = (left + right) // 2
+    return jsonify({
+        'action': 'compare',
+        'review_ids': review_ids,
+        'left': left,
+        'right': right,
+        'current': next_current,
+        'new_review_id': new_review_id,
+        'compare_to_id': review_ids[next_current]
+    })
+
+@app.route('/update-review-order', methods=['POST'])
+@jwt_required()
+def update_review_order():
+    data = request.json
+    ordered_review_ids = data['ordered_review_ids']
+    print(f"Received ordered_review_ids: {ordered_review_ids}")
+
+    # Load reviews
+    reviews = Review.query.filter(Review.id.in_(ordered_review_ids)).all()
+    review_map = {r.id: r for r in reviews}
+
+    total_reviews = len(ordered_review_ids)
+    for i, review_id in enumerate(ordered_review_ids):
+        rank = round(10 - (i / (total_reviews - 1)) * 10, 1) if total_reviews > 1 else 10
+        review = review_map.get(review_id)
+        if review:
+            print(f"Setting ID {review.id} ({review.restaurant_name}) to rank {rank}")
+            review.ranking = rank
+
+    db.session.commit()
+    return jsonify({'message': 'Rankings updated'})
+
+@app.route('/review/<int:review_id>')
+@jwt_required()
+def get_review(review_id):
+    review = Review.query.get_or_404(review_id)
+    return jsonify({
+        'id': review.id,
+        'restaurant_name': review.restaurant_name,
+        'location': review.location,
+        'notes': review.notes,
+        'timestamp': review.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from sortedcontainers import SortedList
 
 db = SQLAlchemy()
 
@@ -42,3 +43,15 @@ class Like(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     review_id = db.Column(db.Integer, db.ForeignKey('review.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+class ReviewEntry:
+    def __init__(self, review):
+        self.review = review  # SQLAlchemy Review object
+
+    def __lt__(self, other):
+        self_rank = self.review.ranking if self.review.ranking is not None else 5
+        other_rank = other.review.ranking if other.review.ranking is not None else 5
+        return self_rank > other_rank
+
+    def __repr__(self):
+        return f"<ReviewEntry {self.review.restaurant_name} (Rank: {self.review.ranking})>"
