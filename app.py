@@ -451,6 +451,7 @@ def feed():
             'location': r.location,
             'notes': r.notes,
             'sentiment': r.sentiment,
+            'ranking': round(r.ranking, 1) if r.ranking is not None else None,
             'photo_url': r.photo_url,
             'pictures': r.pictures,
             'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
