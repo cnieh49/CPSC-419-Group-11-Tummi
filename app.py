@@ -110,7 +110,7 @@ def dashboard():
 @jwt_required()
 def user_reviews():
     user_id = get_jwt_identity()
-    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking.desc()).all()
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
     return jsonify([{
         'id': r.id,
         'restaurant_name': r.restaurant_name,
