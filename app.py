@@ -550,7 +550,9 @@ def reviews_for_user(user_id):
         'notes': r.notes,
         'photo_url': r.photo_url,
         'pictures': r.get_pictures(),
-        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        'sentiment': r.sentiment,
+        'ranking': round(r.ranking, 1) if r.ranking is not None else None
     } for r in reviews])
     
 @app.route('/like/<int:review_id>', methods=['POST'])

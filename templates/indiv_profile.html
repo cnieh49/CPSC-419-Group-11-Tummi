@@ -113,6 +113,8 @@
                     <span class="text-xs text-gray-500 mt-1">${r.timestamp}</span>
                     </div>
                     <p class="text-sm text-gray-600"><strong>Location:</strong> ${r.location}</p>
+                    <p class="text-sm text-gray-600"><strong>Sentiment:</strong> ${r.sentiment || 'N/A'}</p>
+                    <p class="text-sm text-gray-600"><strong>Ranking:</strong> ${r.ranking !== null ? parseFloat(r.ranking).toFixed(1) : 'N/A'} / 10</p>                
                     <p class="text-sm text-gray-800">${r.notes ? r.notes : '<em class="text-gray-400">No notes provided.</em>'}</p>
                     ${imagesHTML ? `<div class="flex flex-wrap gap-3 pt-2">${imagesHTML}</div>` : ''}
                 `;
