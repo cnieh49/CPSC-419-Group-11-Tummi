@@ -178,6 +178,8 @@
               </p>
               <h4 class="text-lg font-semibold text-gray-800">${r.restaurant_name}</h4>
               <p class="text-sm"><strong>Location:</strong> ${r.location}</p>
+              <p class="text-sm"><strong>Sentiment:</strong> <em>${r.sentiment || 'N/A'}</em></p>
+              <p class="text-sm"><strong>Ranking:</strong> ${r.ranking !== null ? parseFloat(r.ranking).toFixed(1) : 'N/A'} / 10</p>            
               <p class="text-sm text-gray-700">${r.notes || 'No notes'}</p>
 
               <div class="flex flex-wrap gap-2">

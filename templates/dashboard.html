@@ -136,10 +136,10 @@
         class="bg-teal-400 hover:bg-sky-500 text-white px-4 py-2 rounded-md text-sm">
         Friends Feed
       </button>
-      <button onclick="window.location.href='/compare-reviews'"
+      <!-- <button onclick="window.location.href='/compare-reviews'"
         class="bg-cyan-400 hover:bg-teal-500 text-white px-4 py-2 rounded-md text-sm">
         Compare Reviews
-      </button>
+      </button> -->
       <button onclick="window.location.href='/explore'"
         class="bg-sky-400 hover:bg-cyan-500 text-white px-4 py-2 rounded-md text-sm">
         Explore
@@ -237,6 +237,9 @@
     <h3 class="text-lg font-semibold text-gray-800">${r.restaurant_name}</h3>
     <p class="text-sm text-gray-500">${r.timestamp}</p>
   </div>
+  <p class="text-sm text-gray-700 mb-2">
+    <strong>Rating:</strong> ${parseFloat(r.ranking).toFixed(1)} / 10
+  </p>
 
   <p class="text-sm text-gray-700 mb-2">
     <strong>Rating:</strong> ${parseFloat(r.ranking).toFixed(1)} / 10
@@ -432,8 +435,7 @@
           form.reset();
           closeModal();
           loadReviews();
-        
-          // 🚀 Auto-trigger comparison modal if new_review_id is returned
+
           if (data.new_review_id) {
             openComparisonModal(data.new_review_id);
           }
@@ -617,14 +619,14 @@
           // Directly insert & skip showing the comparison modal
           await finalizeInsertion(data.position, newReviewId);
           closeComparisonModal();  // Just to be safe: close it
-          return;  // EXIT so no modal is shown
+          return;  // Exit so no modal is shown
       }
   
-      // 🚨 Now we know we *need* the modal: show it
+      // Now we know we need the modal: show it
       const modal = document.getElementById('comparison-modal');
       modal.classList.remove('hidden');
   
-      // RESET the modal each time it's opened:
+      // Reset the modal each time it's opened:
       document.getElementById('comparison-status-msg').textContent = '';  // Clear old message
       document.querySelectorAll('#comparison-modal button').forEach(btn => btn.disabled = false);  // Re-enable buttons
   
@@ -633,10 +635,8 @@
   
       loadReview(newReviewId, 'new-review-content');
       loadReview(data.compare_to_id, 'compare-review-content');
-  }
+    }
   
-  
-
     function closeComparisonModal() {
       document.getElementById('comparison-modal').classList.add('hidden');
     }    
@@ -712,9 +712,7 @@
       document.querySelectorAll('#comparison-modal button').forEach(btn => btn.disabled = true);
       loadReviews();
       closeComparisonModal();
-    }    
-    
-
+    }
   </script>
   <div id="comparison-modal" class="modal-overlay hidden">
     <div class="modal bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl mx-auto relative">

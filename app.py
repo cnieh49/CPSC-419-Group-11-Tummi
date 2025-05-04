@@ -120,7 +120,7 @@ def user_reviews():
         'photo_url': r.photo_url,
         'pictures': r.pictures,
         'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-        'ranking': round(r.ranking, 1) if r.ranking is not None else None  # 👈 add this
+        'ranking': round(r.ranking, 1) if r.ranking is not None else None
     } for r in reviews])
 
 @app.route('/uploads/<filename>')
@@ -354,6 +354,24 @@ def delete_review(review_id):
     
     db.session.delete(curr_review)
     update_sentiment_count(user_id, curr_review.sentiment, -1)
+    
+    # Get remaining reviews
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking).all()
+
+    if reviews:
+        min_rank = min(r.ranking for r in reviews)
+        max_rank = max(r.ranking for r in reviews)
+
+        # Avoid division by zero if all ranks are the same
+        for r in reviews:
+            if max_rank != min_rank:
+                new_rank = (r.ranking - min_rank) / (max_rank - min_rank) * 10
+            else:
+                new_rank = 10  # Or keep as is if there's only one left
+
+            print(f"Rescaling ID {r.id} ({r.restaurant_name}): {r.ranking:.1f} → {new_rank:.1f}")
+            r.ranking = round(new_rank, 1)
+
     db.session.commit()
     
     # Now reindex the remaining reviews
@@ -364,7 +382,6 @@ def delete_review(review_id):
 
     return jsonify({'message': 'Deleted the selected review'}), 200
 
-# YELP_API_KEY = 'w4R9lrpiNFCv82-lbRluyeo9q3mOaXgw3XvfihkU8Cgl4rogusg99uDGZEA09XR0jnpJzfIp_gdljPfYHKTjGmKMgAwhddmigimcqpAGfJkjOvm4lxLdZVfxI0cUaHYx'
 YELP_API_KEY = os.getenv("YELP_API_KEY")
 YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'
 
@@ -439,6 +456,7 @@ def feed():
             'location': r.location,
             'notes': r.notes,
             'sentiment': r.sentiment,
+            'ranking': round(r.ranking, 1) if r.ranking is not None else None,
             'photo_url': r.photo_url,
             'pictures': r.pictures,
             'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
@@ -530,7 +548,7 @@ def user_profile_page(user_id):
 @app.route('/user-reviews/<int:user_id>')
 @jwt_required()
 def reviews_for_user(user_id):
-    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
+    reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking.desc()).all()
     return jsonify([{
         'id': r.id,
         'restaurant_name': r.restaurant_name,
@@ -538,7 +556,9 @@ def reviews_for_user(user_id):
         'notes': r.notes,
         'photo_url': r.photo_url,
         'pictures': r.get_pictures(),
-        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        'timestamp': r.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        'sentiment': r.sentiment,
+        'ranking': round(r.ranking, 1) if r.ranking is not None else None
     } for r in reviews])
     
 @app.route('/like/<int:review_id>', methods=['POST'])
@@ -813,7 +833,6 @@ def get_review(review_id):
         'notes': review.notes,
         'timestamp': review.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     })
-
 
 if __name__ == '__main__':
     app.run(debug=True)
