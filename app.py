@@ -1,18 +1,23 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, make_response
-from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request, set_access_cookies, unset_jwt_cookies
-from flask_jwt_extended.exceptions import NoAuthorizationError
-from models import db, User, Like, ReviewEntry
-from werkzeug.utils import secure_filename
-from datetime import datetime
-from dotenv import load_dotenv
-from PIL import Image
-from io import BytesIO
+"""
+app.py
+
+This is the main application file for the Tummi project. It defines the Flask application, routes, and logic for handling 
+user authentication, profile management, reviews, likes, and interactions with the Yelp API. The application uses SQLAlchemy 
+for database management and Flask-JWT-Extended for authentication.
+"""
+
 import os
 import json
+from datetime import datetime
+from io import BytesIO
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, make_response
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, set_access_cookies
 import requests
 from sortedcontainers import SortedList
-from sqlalchemy import or_
+from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+from PIL import Image
+from models import db, User, Like, ReviewEntry
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv()
@@ -32,6 +37,9 @@ jwt = JWTManager(app)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 class Review(db.Model):
+    """
+    Represents a review created by a user for a restaurant.
+    """
     id = db.Column(db.Integer, primary_key=True)
     restaurant_name = db.Column(db.String(120), nullable=False)
     location = db.Column(db.String(120), nullable=False)
@@ -45,12 +53,21 @@ class Review(db.Model):
     ranking = db.Column(db.Integer, nullable=True)
 
     def get_pictures(self):
+        """
+        Retrieves the list of picture URLs associated with the review.
+        """
         return json.loads(self.pictures or "[]")
 
     def set_pictures(self, pictures_list):
+        """
+        Sets the list of picture URLs for the review.
+        """
         self.pictures = json.dumps(pictures_list)
-    
+
     def binary_insert_reorder(cls, reviews, new_review):
+        """
+        Inserts a new review into a sorted list of reviews based on ranking using binary search.
+        """
         left, right = 0, len(reviews) - 1
         while left <= right:
             mid = (left + right) // 2
@@ -64,6 +81,9 @@ class Review(db.Model):
         return reviews
 
 class UserSentimentCount(db.Model):
+    """
+    Tracks the count of sentiments (e.g., positive, negative) for a user.
+    """
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     sentiment = db.Column(db.String, nullable=False)
@@ -76,29 +96,41 @@ with app.app_context():
 
 @app.route('/')
 def home():
+    """
+    Redirects to the login page.
+    """
     return redirect(url_for('login_page'))
 
 @app.route('/login-page')
 def login_page():
+    """
+    Renders the login page.
+    """
     return render_template('login.html')
 
 @app.route('/register-page')
 def register_page():
+    """
+    Renders the registration page.
+    """
     return render_template('register.html')
 
 @app.route('/dashboard')
 @jwt_required()
 def dashboard():
+    """
+    Returns the user's dashboard data, including their email and display name.
+    """
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
-    
+
     if user.first_name != "No name provided" and user.last_name != "No name provided":
         display_name = f"{user.first_name} {user.last_name}"
     elif user.first_name != "No name provided" and user.last_name == "No name provided":
         display_name = f"{user.first_name}"
     else:
         display_name = user.email
-    
+
     return jsonify({
         "email": user.email,
         "display_name": display_name,
@@ -109,6 +141,9 @@ def dashboard():
 @app.route('/user-reviews')
 @jwt_required()
 def user_reviews():
+    """
+    Retrieves all reviews created by the logged-in user.
+    """
     user_id = get_jwt_identity()
     reviews = Review.query.filter_by(user_id=user_id).order_by(Review.timestamp.desc()).all()
     return jsonify([{
@@ -125,11 +160,17 @@ def user_reviews():
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
+    """
+    Sends uploaded files from the upload folder.
+    """
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/dashboard-page')
 @jwt_required()
 def dashboard_page():
+    """
+    Renders the dashboard page for the logged-in user.
+    """
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
 
@@ -147,26 +188,32 @@ def dashboard_page():
 
 @app.route('/login', methods=['POST'])
 def login():
+    """
+    Authenticates a user and sets a JWT token.
+    """
     data = request.json
     user = User.query.filter_by(email=data['email']).first()
 
     if user and user.check_password(data['password']):
         token = create_access_token(identity=str(user.id))
         resp = jsonify({'message': 'Login successful'})
-        set_access_cookies(resp, token) 
+        set_access_cookies(resp, token)
         return resp, 200
-        
+
     return jsonify({'message': 'Invalid credentials'}), 401
 
 @app.route('/register', methods=['POST'])
 def register():
+    """
+    Registers a new user
+    """
     data = request.json
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'message': 'Email already exists'}), 409
     user = User(
         email=data['email'],
-        first_name=data.get('first_name'), 
-        last_name=data.get('last_name') 
+        first_name=data.get('first_name'),
+        last_name=data.get('last_name')
     )
     user.set_password(data['password'])
     db.session.add(user)
@@ -180,6 +227,9 @@ def register():
 @app.route('/profile-page')
 @jwt_required()
 def profile_page():
+    """
+    Renders the profile page for the logged-in user.
+    """
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
 
@@ -195,10 +245,13 @@ def profile_page():
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
-    
+
     return response
 
 def crop_center_square(image):
+    """
+    Crops the image to a square by taking the center part of the image.
+    """
     width, height = image.size
     min_dim = min(width, height)
     left = (width - min_dim) // 2
@@ -210,9 +263,12 @@ def crop_center_square(image):
 @app.route('/edit-profile', methods=['POST'])
 @jwt_required()
 def edit_profile():
+    """
+    Updates the user's profile information, including first name, last name, bio, location, and profile picture.
+    """
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
-    
+
     if 'profile_picture' in request.files:
         photo = request.files['profile_picture']
         if photo:
@@ -229,18 +285,21 @@ def edit_profile():
                 f.write(output.read())
 
             user.profile_picture = url_for('uploaded_file', filename=filename, _external=True)
-    
+
     user.first_name = request.form.get('first_name', user.first_name)
     user.last_name = request.form.get('last_name', user.last_name)
     user.bio = request.form.get('bio', user.bio)
     user.location = request.form.get('location', user.location)
-    
+
     db.session.commit()
     return jsonify({'message': 'Profile updated successfully'}), 200
 
 @app.route('/get-profile')
 @jwt_required()
 def get_profile():
+    """
+    Retrieves the user's profile information.
+    """
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
     return jsonify({
@@ -252,6 +311,9 @@ def get_profile():
     })
 
 def update_sentiment_count(user_id, sentiment, delta):
+    """
+    Updates the sentiment count for a user. If the count goes to zero or below, it deletes the entry.
+    """
     entry = UserSentimentCount.query.filter_by(user_id=user_id, sentiment=sentiment).first()
     if entry:
         entry.count += delta
@@ -264,6 +326,9 @@ def update_sentiment_count(user_id, sentiment, delta):
 @app.route('/sentiment-counts', methods=['GET'])
 @jwt_required()
 def get_sentiment_counts():
+    """
+    Retrieves the sentiment counts for the logged-in user.
+    """
     user_id = get_jwt_identity()
     counts = UserSentimentCount.query.filter_by(user_id=user_id).all()
     result = {c.sentiment: c.count for c in counts}
@@ -272,13 +337,16 @@ def get_sentiment_counts():
 @app.route('/add-review', methods=['POST'])
 @jwt_required()
 def add_review():
+    """
+    Adds a new review for a restaurant. The review includes the restaurant name, location, notes, sentiment, and pictures.
+    """
     user_id = get_jwt_identity()
     restaurant_name = request.form.get('restaurant_name')
     location = request.form.get('location')
     notes = request.form.get('notes')
     sentiment = request.form.get('sentiment')
-    
-    pictures_files = request.files.getlist('pictures') 
+
+    pictures_files = request.files.getlist('pictures')
     pictures_urls = []
     for picture in pictures_files:
         if picture:
@@ -292,14 +360,14 @@ def add_review():
         location=location,
         notes=notes,
         sentiment=sentiment,
-        pictures=json.dumps(pictures_urls),  
+        pictures=json.dumps(pictures_urls),
         user_id=user_id,
     )
-    
+
     db.session.add(review)
     update_sentiment_count(user_id, review.sentiment, +1)
     db.session.commit()
-    
+
     return jsonify({
         'message': 'Review added successfully',
         'new_review_id': review.id  # 👈 send the ID to frontend
@@ -308,12 +376,15 @@ def add_review():
 @app.route('/edit-review/<int:review_id>', methods=['PUT'])
 @jwt_required()
 def edit_review(review_id):
+    """
+    Edits an existing review. The user can update the notes, sentiment, and pictures.
+    """
     user_id = get_jwt_identity()
     curr_review = Review.query.get(review_id)
 
     if not curr_review or curr_review.user_id != int(user_id):
         return jsonify({'message': 'Review not found or access denied'}), 404
-    
+
     review_updated_bool = False
     updated_information = request.json
 
@@ -341,20 +412,26 @@ def edit_review(review_id):
 @app.route('/compare-reviews')
 @jwt_required()
 def compare_reviews_page():
+    """
+    Renders the page for comparing reviews.
+    """
     return render_template('compare_review.html')
 
 @app.route('/delete-review/<int:review_id>', methods=['DELETE'])
 @jwt_required()
 def delete_review(review_id):
+    """
+    Deletes a review. If the review is not found or the user does not have access, it returns an error.
+    """
     user_id = get_jwt_identity()
     curr_review = Review.query.get(review_id)
 
     if not curr_review or curr_review.user_id != int(user_id):
         return jsonify({'message': 'Review not found or access denied'}), 404
-    
+
     db.session.delete(curr_review)
     update_sentiment_count(user_id, curr_review.sentiment, -1)
-    
+
     # Get remaining reviews
     reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking).all()
 
@@ -396,6 +473,9 @@ CUISINE_TO_CATEGORY = {
 
 @app.route('/yelp-search')
 def yelp_search():
+    """
+    Searches for restaurants using the Yelp API based on user-provided filters.
+    """
     query = request.args.get('query')
     price_filter = request.args.getlist('price')
     open_now_filter = request.args.get('open_now')
@@ -429,16 +509,25 @@ def yelp_search():
 @app.route('/me')
 @jwt_required()
 def me():
+    """
+    Returns the logged-in user's information.
+    """
     user = User.query.get(get_jwt_identity())
     return jsonify({ "email": user.email, "id": user.id })
 
 @app.route('/feed-page')
 def feed_page():
+    """
+    Renders the feed page.
+    """
     return render_template('feed.html')
 
 @app.route('/feed')
 @jwt_required()
 def feed():
+    """
+    Retrieves the reviews from users that the logged-in user is following.
+    """
     user = User.query.get(get_jwt_identity())
     followed_ids = [u.id for u in user.followed.all()]
 
@@ -463,12 +552,18 @@ def feed():
 @app.route('/all-users')
 @jwt_required()
 def all_users():
+    """
+    Retrieves all users in the system.
+    """
     users = User.query.all()
     return jsonify([{'id': u.id, 'email': u.email} for u in users])
 
 @app.route('/follow/<int:user_id>', methods=['POST'])
 @jwt_required()
 def follow_user(user_id):
+    """
+    Follows a user. The current user cannot follow themselves or an invalid user.
+    """
     current_user = User.query.get(get_jwt_identity())
     target_user = User.query.get(user_id)
 
@@ -485,6 +580,9 @@ def follow_user(user_id):
 @app.route('/unfollow/<int:user_id>', methods=['POST'])
 @jwt_required()
 def unfollow_user(user_id):
+    """
+    Unfollows a user. The current user cannot unfollow themselves or an invalid user.
+    """
     current_user = User.query.get(get_jwt_identity())
     target_user = User.query.get(user_id)
 
@@ -498,6 +596,9 @@ def unfollow_user(user_id):
 @app.route('/is-following/<int:user_id>')
 @jwt_required()
 def is_following(user_id):
+    """
+    Checks if the logged-in user is following another user.
+    """
     current_user = User.query.get(get_jwt_identity())
     user_friended = User.query.get(user_id)
     if not user_friended or current_user.id == user_id:
@@ -508,24 +609,33 @@ def is_following(user_id):
 @app.route('/followers')
 @jwt_required()
 def get_followers():
+    """
+    Retrieves the followers of the logged-in user.
+    """
     user = User.query.get(get_jwt_identity())
     return jsonify([{'id': u.id, 'email': u.email} for u in user.followers.all()])
 
 @app.route('/following')
 @jwt_required()
 def get_following():
+    """
+    Retrieves the users that the logged-in user is following.
+    """
     user = User.query.get(get_jwt_identity())
     return jsonify([{'id': u.id, 'email': u.email} for u in user.followed.all()])
 
 @app.route('/user/<int:user_id>')
 def user_profile_page(user_id):
+    """
+    Renders the individual user profile page.
+    """
     user = User.query.get(user_id)
     if not user:
         return "User not found", 404
-    
+
     display_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.email
     is_own_profile = (str(user.id) == str(user_id))
-    
+
     return render_template(
         'indiv_profile.html',
         user_id=user.id,
@@ -539,10 +649,13 @@ def user_profile_page(user_id):
         followers_count=len(user.followers.all()),
         following_count=len(user.followed.all())
     )
-    
+
 @app.route('/user-reviews/<int:user_id>')
 @jwt_required()
 def reviews_for_user(user_id):
+    """
+    Retrieves all reviews created by a specific user.
+    """
     reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking.desc()).all()
     return jsonify([{
         'id': r.id,
@@ -555,10 +668,13 @@ def reviews_for_user(user_id):
         'sentiment': r.sentiment,
         'ranking': round(r.ranking, 1) if r.ranking is not None else None
     } for r in reviews])
-    
+
 @app.route('/like/<int:review_id>', methods=['POST'])
 @jwt_required()
 def like_review(review_id):
+    """
+    Likes a review. If the user has already liked the review, it returns an error.
+    """
     user_id = get_jwt_identity()
     existing = Like.query.filter_by(user_id=user_id, review_id=review_id).first()
 
@@ -573,6 +689,9 @@ def like_review(review_id):
 @app.route('/unlike/<int:review_id>', methods=['POST'])
 @jwt_required()
 def unlike_review(review_id):
+    """
+    Unlikes a review. If the user has not liked the review, it returns an error.
+    """
     user_id = get_jwt_identity()
     like = Like.query.filter_by(user_id=user_id, review_id=review_id).first()
 
@@ -586,6 +705,9 @@ def unlike_review(review_id):
 @app.route('/likes-count/<int:review_id>')
 @jwt_required()
 def likes_count(review_id):
+    """
+    Retrieves the count of likes for a review and whether the logged-in user has liked it.
+    """
     count = Like.query.filter_by(review_id=review_id).count()
     user_id = get_jwt_identity()
     liked = Like.query.filter_by(user_id=user_id, review_id=review_id).first() is not None
@@ -594,23 +716,30 @@ def likes_count(review_id):
 @app.route('/likes/<int:review_id>')
 @jwt_required()
 def get_likes(review_id):
+    """
+    Retrieves the users who liked a specific review.
+    """
     from models import Like, User  # just in case
     likes = Like.query.filter_by(review_id=review_id).all()
     users = [User.query.get(l.user_id) for l in likes]
     return jsonify([{'id': u.id, 'email': u.email} for u in users if u])
 
-import json
-
 @app.template_filter('parse_json')
 def parse_json(value):
+    """
+    Parses a JSON string into a Python object. If parsing fails, returns an empty list.
+    """
     try:
         return json.loads(value or "[]")
     except json.JSONDecodeError:
-        return [] 
-    
+        return []
+
 @app.route('/edit-review-images/<int:review_id>', methods=['POST'])
 @jwt_required()
 def edit_review_images(review_id):
+    """
+    Edits the images associated with a review. The user can remove existing images and add new ones.
+    """
     user_id = get_jwt_identity()
     review = Review.query.get(review_id)
 
@@ -640,11 +769,17 @@ def edit_review_images(review_id):
 
 @app.route('/restaurant/<name>')
 def restaurant_page(name):
+    """
+    Renders the restaurant page. This is a placeholder for the actual restaurant details.
+    """
     return render_template('restaurant.html')
 
 @app.route('/restaurant-details/<name>')
 @jwt_required()
 def restaurant_details(name):
+    """
+    Retrieves restaurant details from the Yelp API based on the restaurant name.
+    """
     try:
         response = requests.get(
             "https://api.yelp.com/v3/businesses/search",
@@ -663,9 +798,12 @@ def restaurant_details(name):
 @app.route('/restaurant-reviews/<restaurant_name>')
 @jwt_required()
 def restaurant_reviews(restaurant_name):
+    """
+    Retrieves reviews for a specific restaurant from users that the logged-in user is following.
+    """
     user = User.query.get(get_jwt_identity())
     followed_ids = [u.id for u in user.followed.all()]
-    
+
     reviews = Review.query.filter_by(restaurant_name=restaurant_name).filter(Review.user_id.in_(followed_ids)).order_by(Review.timestamp.desc()).all()
 
     return jsonify([{
@@ -679,14 +817,20 @@ def restaurant_reviews(restaurant_name):
         'user_id': r.user_id,
         'email': r.user.email
     } for r in reviews])
-    
+
 @app.route('/explore')
 def explore_page():
+    """
+    Renders the explore page
+    """
     return render_template('explore.html')
 
 @app.route('/followers/<int:user_id>')
 @jwt_required()
 def get_followers_for_user(user_id):
+    """
+    Retrieves the followers of a specific user.
+    """
     user = User.query.get(user_id)
     if not user:
         return jsonify({'message': 'User not found'}), 404
@@ -696,6 +840,9 @@ def get_followers_for_user(user_id):
 @app.route('/following/<int:user_id>')
 @jwt_required()
 def get_following_for_user(user_id):
+    """
+    Retrieves the users that a specific user is following.
+    """
     user = User.query.get(user_id)
     if not user:
         return jsonify({'message': 'User not found'}), 404
@@ -703,19 +850,28 @@ def get_following_for_user(user_id):
 
 @jwt.unauthorized_loader
 def custom_unauthorized_response(callback):
+    """
+    Custom response for unauthorized access (e.g., missing token).
+    """
     return redirect(url_for('login_page', next=request.path, msg='login_required'))
 
 @jwt.expired_token_loader
 def custom_expired_token_callback(jwt_header, jwt_payload):
+    """
+    Custom response for expired tokens.
+    """
     return redirect(url_for('login_page', next=request.path, msg='login_required'))
 
 def build_user_bst(user_id, exclude_review_id=None):
+    """
+    Builds a binary search tree (BST) of reviews for a user, excluding a specific review ID.
+    """
     reviews = Review.query.filter(
         Review.user_id == user_id,
         Review.id != exclude_review_id
     ).all()
     bst = SortedList([ReviewEntry(r) for r in reviews])
-    
+
     print("=== Sorted List Order ===")
     for entry in bst:
         review = entry.review
@@ -726,6 +882,9 @@ def build_user_bst(user_id, exclude_review_id=None):
 @app.route('/start-comparison/<int:new_review_id>', methods=['GET'])
 @jwt_required()
 def start_comparison(new_review_id):
+    """
+    Starts the comparison process for a new review. It builds a BST of existing reviews and returns the initial state.
+    """
     user_id = get_jwt_identity()
 
     # Load BST (or ordered list of review IDs)
@@ -756,8 +915,11 @@ def start_comparison(new_review_id):
 @app.route('/submit-comparison', methods=['POST'])
 @jwt_required()
 def submit_comparison():
+    """
+    Submits the result of a comparison between two reviews. It determines where to insert the new review based on user feedback.
+    """
     data = request.json
-    user_id = get_jwt_identity()
+    #user_id = get_jwt_identity()
 
     review_ids = data['review_ids']
     left = data['left']
@@ -799,6 +961,9 @@ def submit_comparison():
 @app.route('/update-review-order', methods=['POST'])
 @jwt_required()
 def update_review_order():
+    """
+    Updates the ranking of reviews based on the order provided by the user.
+    """
     data = request.json
     ordered_review_ids = data['ordered_review_ids']
     print(f"Received ordered_review_ids: {ordered_review_ids}")
@@ -821,6 +986,9 @@ def update_review_order():
 @app.route('/review/<int:review_id>')
 @jwt_required()
 def get_review(review_id):
+    """
+    Retrieves the details of a specific review.
+    """
     review = Review.query.get_or_404(review_id)
     return jsonify({
         'id': review.id,
