@@ -1,17 +1,20 @@
 """
 app.py
 
-This is the main application file for the Tummi project. It defines the Flask application, routes, and logic for handling 
-user authentication, profile management, reviews, likes, and interactions with the Yelp API. The application uses SQLAlchemy 
-for database management and Flask-JWT-Extended for authentication.
+This is the main application file for the Tummi project. It defines the Flask application, 
+routes, and logic for handling user authentication, profile management, reviews, likes, 
+and interactions with the Yelp API. The application uses SQLAlchemy for database management 
+and Flask-JWT-Extended for authentication.
 """
 
 import os
 import json
 from datetime import datetime
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, make_response
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, set_access_cookies
+from flask import Flask, render_template, request, jsonify
+from flask import redirect, url_for, send_from_directory, make_response
+from flask_jwt_extended import JWTManager, create_access_token
+from flask_jwt_extended import jwt_required, get_jwt_identity, set_access_cookies
 import requests
 from sortedcontainers import SortedList
 from werkzeug.utils import secure_filename
@@ -21,7 +24,6 @@ from models import db, User, Like, ReviewEntry
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv()
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'db.sqlite')}"
@@ -30,10 +32,8 @@ app.config['UPLOAD_FOLDER'] = './uploads'
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_SECURE"] = False
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
-
 db.init_app(app)
 jwt = JWTManager(app)
-
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 class Review(db.Model):
@@ -48,7 +48,6 @@ class Review(db.Model):
     pictures = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
     sentiment = db.Column(db.String(255))
     ranking = db.Column(db.Integer, nullable=True)
 
@@ -64,7 +63,7 @@ class Review(db.Model):
         """
         self.pictures = json.dumps(pictures_list)
 
-    def binary_insert_reorder(cls, reviews, new_review):
+    def binary_insert_reorder(self, cls, reviews, new_review):
         """
         Inserts a new review into a sorted list of reviews based on ranking using binary search.
         """
@@ -73,7 +72,7 @@ class Review(db.Model):
             mid = (left + right) // 2
             if reviews[mid].id == new_review.id:
                 return
-            elif reviews[mid].ranking < new_review.ranking:
+            if reviews[mid].ranking < new_review.ranking:
                 left = mid + 1
             else:
                 right = mid - 1
@@ -88,7 +87,6 @@ class UserSentimentCount(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     sentiment = db.Column(db.String, nullable=False)
     count = db.Column(db.Integer, default=0)
-
     __table_args__ = (db.UniqueConstraint('user_id', 'sentiment', name='_user_sentiment_uc'),)
 
 with app.app_context():
@@ -123,14 +121,12 @@ def dashboard():
     """
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
-
     if user.first_name != "No name provided" and user.last_name != "No name provided":
         display_name = f"{user.first_name} {user.last_name}"
     elif user.first_name != "No name provided" and user.last_name == "No name provided":
         display_name = f"{user.first_name}"
     else:
         display_name = user.email
-
     return jsonify({
         "email": user.email,
         "display_name": display_name,
@@ -174,7 +170,11 @@ def dashboard_page():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
 
-    display_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.email
+    display_name = (
+        f"{user.first_name} {user.last_name}"
+        if user.first_name and user.last_name
+        else user.email
+    )
 
     return render_template(
         'dashboard.html',
@@ -193,13 +193,11 @@ def login():
     """
     data = request.json
     user = User.query.filter_by(email=data['email']).first()
-
     if user and user.check_password(data['password']):
         token = create_access_token(identity=str(user.id))
         resp = jsonify({'message': 'Login successful'})
         set_access_cookies(resp, token)
         return resp, 200
-
     return jsonify({'message': 'Invalid credentials'}), 401
 
 @app.route('/register', methods=['POST'])
@@ -219,10 +217,6 @@ def register():
     db.session.add(user)
     db.session.commit()
     return jsonify({'message': 'User registered successfully'}), 201
-
-# @app.route('/profile-page')
-# def profile_page():
-#     return render_template('profile.html')
 
 @app.route('/profile-page')
 @jwt_required()
@@ -264,7 +258,8 @@ def crop_center_square(image):
 @jwt_required()
 def edit_profile():
     """
-    Updates the user's profile information, including first name, last name, bio, location, and profile picture.
+    Updates the user's profile information, including first name, 
+    last name, bio, location, and profile picture.
     """
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
@@ -275,17 +270,13 @@ def edit_profile():
             filename = secure_filename(photo.filename)
             image = Image.open(photo.stream)
             image = crop_center_square(image)
-
             output = BytesIO()
             image.save(output, format='JPEG')
             output.seek(0)
-
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             with open(file_path, 'wb') as f:
                 f.write(output.read())
-
             user.profile_picture = url_for('uploaded_file', filename=filename, _external=True)
-
     user.first_name = request.form.get('first_name', user.first_name)
     user.last_name = request.form.get('last_name', user.last_name)
     user.bio = request.form.get('bio', user.bio)
@@ -312,7 +303,8 @@ def get_profile():
 
 def update_sentiment_count(user_id, sentiment, delta):
     """
-    Updates the sentiment count for a user. If the count goes to zero or below, it deletes the entry.
+    Updates the sentiment count for a user. 
+    If the count goes to zero or below, it deletes the entry.
     """
     entry = UserSentimentCount.query.filter_by(user_id=user_id, sentiment=sentiment).first()
     if entry:
@@ -338,7 +330,8 @@ def get_sentiment_counts():
 @jwt_required()
 def add_review():
     """
-    Adds a new review for a restaurant. The review includes the restaurant name, location, notes, sentiment, and pictures.
+    Adds a new review for a restaurant. The review includes the restaurant name, 
+    location, notes, sentiment, and pictures.
     """
     user_id = get_jwt_identity()
     restaurant_name = request.form.get('restaurant_name')
@@ -354,7 +347,6 @@ def add_review():
             picture_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             picture.save(picture_path)
             pictures_urls.append(url_for('uploaded_file', filename=filename, _external=True))
-
     review = Review(
         restaurant_name=restaurant_name,
         location=location,
@@ -363,11 +355,9 @@ def add_review():
         pictures=json.dumps(pictures_urls),
         user_id=user_id,
     )
-
     db.session.add(review)
     update_sentiment_count(user_id, review.sentiment, +1)
     db.session.commit()
-
     return jsonify({
         'message': 'Review added successfully',
         'new_review_id': review.id  # 👈 send the ID to frontend
@@ -381,33 +371,30 @@ def edit_review(review_id):
     """
     user_id = get_jwt_identity()
     curr_review = Review.query.get(review_id)
-
     if not curr_review or curr_review.user_id != int(user_id):
         return jsonify({'message': 'Review not found or access denied'}), 404
-
     review_updated_bool = False
     updated_information = request.json
 
     if 'notes' in updated_information and updated_information['notes'] != curr_review.notes:
         curr_review.notes = updated_information['notes']
         review_updated_bool = True
-
-    if 'sentiment' in updated_information and updated_information['sentiment'] != curr_review.sentiment:
+    if (
+        'sentiment' in updated_information
+        and updated_information['sentiment'] != curr_review.sentiment
+    ):
         update_sentiment_count(user_id, updated_information['sentiment'], +1)
         update_sentiment_count(user_id, curr_review.sentiment, -1)
         curr_review.sentiment = updated_information['sentiment']
         review_updated_bool = True
-
     if 'pictures' in updated_information:
         if updated_information['pictures'] != curr_review.get_pictures():
             curr_review.set_pictures(updated_information['pictures'])
             review_updated_bool = True
-
     if review_updated_bool:
         db.session.commit()
         return jsonify({'message': 'Review updated successfully'}), 200
-    else:
-        return jsonify({'message': 'No changes detected'}), 200
+    return jsonify({'message': 'No changes detected'}), 200
 
 @app.route('/compare-reviews')
 @jwt_required()
@@ -421,7 +408,8 @@ def compare_reviews_page():
 @jwt_required()
 def delete_review(review_id):
     """
-    Deletes a review. If the review is not found or the user does not have access, it returns an error.
+    Deletes a review. If the review is not found or the user does not have access, 
+    it returns an error.
     """
     user_id = get_jwt_identity()
     curr_review = Review.query.get(review_id)
@@ -431,26 +419,21 @@ def delete_review(review_id):
 
     db.session.delete(curr_review)
     update_sentiment_count(user_id, curr_review.sentiment, -1)
-
     # Get remaining reviews
     reviews = Review.query.filter_by(user_id=user_id).order_by(Review.ranking).all()
-
     if reviews:
         min_rank = min(r.ranking for r in reviews)
         max_rank = max(r.ranking for r in reviews)
-
         # Avoid division by zero if all ranks are the same
         for r in reviews:
             if max_rank != min_rank:
                 new_rank = (r.ranking - min_rank) / (max_rank - min_rank) * 10
             else:
                 new_rank = 10  # Or keep as is if there's only one left
-
             print(f"Rescaling ID {r.id} ({r.restaurant_name}): {r.ranking:.1f} → {new_rank:.1f}")
             r.ranking = round(new_rank, 1)
 
     db.session.commit()
-
     return jsonify({'message': 'Deleted the selected review'}), 200
 
 # call the YELP API
@@ -480,7 +463,6 @@ def yelp_search():
     price_filter = request.args.getlist('price')
     open_now_filter = request.args.get('open_now')
     cuisine_filter = request.args.getlist('categories')
-
     categories = []
     for cuisine in cuisine_filter:
         category = CUISINE_TO_CATEGORY.get(cuisine)
@@ -500,7 +482,6 @@ def yelp_search():
         params['open_now'] = 'true'
     if categories:
         params['categories'] = ','.join(categories)
-
     res = requests.get(YELP_API_BASE, headers=headers, params=params)
     data = res.json()
 
@@ -531,7 +512,12 @@ def feed():
     user = User.query.get(get_jwt_identity())
     followed_ids = [u.id for u in user.followed.all()]
 
-    reviews = Review.query.filter(Review.user_id.in_(followed_ids)).order_by(Review.timestamp.desc()).all()
+    reviews = (
+        Review.query
+        .filter(Review.user_id.in_(followed_ids))
+        .order_by(Review.timestamp.desc())
+        .all()
+    )
 
     return jsonify([
         {
@@ -633,7 +619,11 @@ def user_profile_page(user_id):
     if not user:
         return "User not found", 404
 
-    display_name = f"{user.first_name} {user.last_name}" if user.first_name and user.last_name else user.email
+    display_name = (
+        f"{user.first_name} {user.last_name}"
+        if user.first_name and user.last_name
+        else user.email
+    )
     is_own_profile = (str(user.id) == str(user_id))
 
     return render_template(
@@ -789,11 +779,9 @@ def restaurant_details(name):
         data = response.json()
         if data["businesses"]:
             return jsonify(data["businesses"][0])
-        else:
-            return jsonify({"error": "No details found"}), 404
+        return jsonify({"error": "No details found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/restaurant-reviews/<restaurant_name>')
 @jwt_required()
@@ -803,9 +791,13 @@ def restaurant_reviews(restaurant_name):
     """
     user = User.query.get(get_jwt_identity())
     followed_ids = [u.id for u in user.followed.all()]
-
-    reviews = Review.query.filter_by(restaurant_name=restaurant_name).filter(Review.user_id.in_(followed_ids)).order_by(Review.timestamp.desc()).all()
-
+    reviews = (
+        Review.query
+        .filter_by(restaurant_name=restaurant_name)
+        .filter(Review.user_id.in_(followed_ids))
+        .order_by(Review.timestamp.desc())
+        .all()
+    )
     return jsonify([{
         'id': r.id,
         'restaurant_name': r.restaurant_name,
@@ -883,7 +875,8 @@ def build_user_bst(user_id, exclude_review_id=None):
 @jwt_required()
 def start_comparison(new_review_id):
     """
-    Starts the comparison process for a new review. It builds a BST of existing reviews and returns the initial state.
+    Starts the comparison process for a new review. 
+    It builds a BST of existing reviews and returns the initial state.
     """
     user_id = get_jwt_identity()
 
@@ -916,7 +909,8 @@ def start_comparison(new_review_id):
 @jwt_required()
 def submit_comparison():
     """
-    Submits the result of a comparison between two reviews. It determines where to insert the new review based on user feedback.
+    Submits the result of a comparison between two reviews. 
+    It determines where to insert the new review based on user feedback.
     """
     data = request.json
     #user_id = get_jwt_identity()
