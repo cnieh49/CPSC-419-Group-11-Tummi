@@ -376,7 +376,6 @@ def delete_review(review_id):
 
     return jsonify({'message': 'Deleted the selected review'}), 200
 
-# YELP_API_KEY = 'w4R9lrpiNFCv82-lbRluyeo9q3mOaXgw3XvfihkU8Cgl4rogusg99uDGZEA09XR0jnpJzfIp_gdljPfYHKTjGmKMgAwhddmigimcqpAGfJkjOvm4lxLdZVfxI0cUaHYx'
 YELP_API_KEY = os.getenv("YELP_API_KEY")
 YELP_API_BASE = 'https://api.yelp.com/v3/businesses/search'
 
