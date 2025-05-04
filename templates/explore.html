@@ -173,6 +173,9 @@
       if (save) {
         history.replaceState({ query, scrollY: window.scrollY }, '', window.location.href);
         localStorage.setItem('explore_query', query);
+        localStorage.setItem('explore_price', JSON.stringify(priceFilter));
+        localStorage.setItem('explore_cuisine', JSON.stringify(cuisineFilter));
+        localStorage.setItem('explore_open_now', openNowFilter);
         localStorage.setItem('explore_scroll', window.scrollY);
       }
 
@@ -302,6 +305,36 @@
     window.addEventListener('beforeunload', () => {
       localStorage.setItem('explore_scroll', window.scrollY);
     });
+
+    window.addEventListener('DOMContentLoaded', () => {
+    const savedQuery = localStorage.getItem('explore_query');
+    const savedPrice = JSON.parse(localStorage.getItem('explore_price') || '[]');
+    const savedCuisine = JSON.parse(localStorage.getItem('explore_cuisine') || '[]');
+    const savedOpenNow = localStorage.getItem('explore_open_now');
+
+    if (savedQuery) {
+      document.getElementById('search-box').value = savedQuery;
+    }
+
+    savedPrice.forEach(val => {
+      const checkbox = document.querySelector(`#price-dropdown input[value="${val}"]`);
+      if (checkbox) checkbox.checked = true;
+    });
+
+    savedCuisine.forEach(val => {
+      const checkbox = document.querySelector(`#cuisine-dropdown input[value="${val}"]`);
+      if (checkbox) checkbox.checked = true;
+    });
+
+    if (savedOpenNow !== null) {
+      const radio = document.querySelector(`#open-now-dropdown input[value="${savedOpenNow}"]`);
+      if (radio) radio.checked = true;
+    }
+
+    if (savedQuery && savedQuery.length >= 3) {
+      performSearch(false); 
+    }
+  });
   </script>
 </body>
 
